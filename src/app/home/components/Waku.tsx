@@ -25,9 +25,8 @@ export const Waku: React.FunctionComponent<{}> = () => {
   return (
     <Block className="mt-10">
       <Subtitle>
-        Waku<p className="text-xs">(select credentials to initialize)</p>
+        Waku
       </Subtitle>
-      <Status text="Waku status" mark={wakuStatus} />
 
       <Block className="mt-4">
         <label
