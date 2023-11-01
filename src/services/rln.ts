@@ -2,8 +2,6 @@ import { ethers } from "ethers";
 import {
   create,
   Keystore,
-  RLNDecoder,
-  RLNEncoder,
   RLNContract,
   SEPOLIA_CONTRACT,
   RLNInstance,

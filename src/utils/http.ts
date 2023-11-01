@@ -1,6 +1,6 @@
 export const http = {
     post(url: string, body: any) {
-        return fetch(url, {
+        return fetch(new URL(url), {
             method: "POST",
             mode: "no-cors",
             referrerPolicy: "no-referrer", 
@@ -13,7 +13,7 @@ export const http = {
           });
     },
     delete(url: string, body: any) {
-        return fetch(url, {
+        return fetch(new URL(url), {
             method: "DELETE",
             mode: "no-cors",
             referrerPolicy: "no-referrer", 
@@ -26,6 +26,6 @@ export const http = {
           });
     },
     get(url: string) {
-        return fetch(url);
+        return fetch(new URL(url));
     }
 };
