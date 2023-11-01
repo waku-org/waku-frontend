@@ -1,67 +1,55 @@
 import React from "react";
-import { waku, Waku, WakuEventsNames, MessageContent } from "@/services/waku";
-import { useStore } from "./useStore";
-import { useRLN } from "./useRLN";
+import { CONTENT_TOPIC } from "@/constants";
+import { Message, waku } from "@/services/waku";
+
+export type MessageContent = {
+  nick: string;
+  text: string;
+  time: string;
+};
 
 export const useWaku = () => {
-  const wakuRef = React.useRef<Waku>();
   const [messages, setMessages] = React.useState<MessageContent[]>([]);
 
-  const { rln } = useRLN();
-  const { activeMembershipID, credentials, setWakuStatus } = useStore();
-
   React.useEffect(() => {
-    if (!credentials || !activeMembershipID || !rln) {
-      return;
-    }
+    const messageListener = (event: CustomEvent) => {
+      const messages: Message[] = event.detail;
+      const parsedMessaged = messages.map((message) => {
+        const time = new Date(message.timestamp);
+        const payload = JSON.parse(atob(message.payload));
 
-    const statusListener = (event: CustomEvent) => {
-      setWakuStatus(event.detail || "");
-    };
-    waku.addEventListener(WakuEventsNames.Status, statusListener);
+        return {
+          nick: payload?.nick || "unknown",
+          text: payload?.text || "empty",
+          time: time.toDateString(),
+        };
+      });
 
-    const messagesListener = (event: CustomEvent) => {
-      setMessages((prev) => [...prev, event.detail as MessageContent]);
-    };
-    waku.addEventListener(WakuEventsNames.Message, messagesListener);
-
-    let terminated = false;
-    const run = async () => {
-      if (terminated) {
-        return;
-      }
-
-      const options = {
-        rln,
-        credentials,
-        membershipID: activeMembershipID,
-      };
-
-      if (!wakuRef.current) {
-        await waku.init(options);
-        wakuRef.current = waku;
-      } else {
-        wakuRef.current.initEncoder(options);
-      }
+      setMessages((prev) => [...prev, ...parsedMessaged]);
     };
 
-    run();
+    waku.filter.addEventListener(CONTENT_TOPIC, messageListener);
+
     return () => {
-      terminated = true;
-      waku.removeEventListener(WakuEventsNames.Status, statusListener);
-      waku.removeEventListener(WakuEventsNames.Message, messagesListener);
+      waku.filter.removeEventListener(CONTENT_TOPIC, messageListener);
     };
-  }, [activeMembershipID, credentials, rln, setWakuStatus]);
+  }, [setMessages]);
 
   const onSend = React.useCallback(
     async (nick: string, text: string) => {
-      if (!wakuRef.current) {
-        return;
-      }
-      await wakuRef.current.sendMessage(nick, text);
+      await waku.lightPush.send({
+        version: 0,
+        timestamp: Date.now(),
+        contentTopic: CONTENT_TOPIC,
+        payload: btoa(JSON.stringify({
+          nick,
+          text
+        })),
+      });
     },
-    [wakuRef]
+    []
   );
 
   return { onSend, messages };
 };
+

@@ -1,202 +1,140 @@
+import { v4 as uuid } from "uuid";
 import {
-  createLightNode,
-  createEncoder,
-  createDecoder,
-  IDecodedMessage,
-  LightNode,
-  waitForRemotePeer,
-} from "@waku/sdk";
-import {
-  CONTENT_TOPIC,
-  ProtoChatMessage,
-  ProtoChatMessageType,
+  PUBSUB_TOPIC,
 } from "@/constants";
-import {
-  RLNDecoder,
-  RLNEncoder,
-  IdentityCredential,
-  RLNInstance,
-  RLNContract,
-} from "@waku/rln";
-import { RLN } from "@/services/rln";
+import { http } from "@/utils/http";
 
-type InitOptions = {
-  membershipID: number;
-  credentials: IdentityCredential;
-  rln: RLN;
+export type Message = {
+  payload: string,
+  contentTopic: string,
+  version: number,
+  timestamp: number
 };
-
-export type MessageContent = {
-  nick: string;
-  text: string;
-  time: string;
-  proofStatus: string;
-};
-
-type SubscribeOptions = {
-  rlnContract: RLNContract;
-  node: LightNode;
-  decoder: RLNDecoder<IDecodedMessage>;
-};
-
-export enum WakuEventsNames {
-  Status = "status",
-  Message = "message",
-}
-
-export enum WakuStatusEventPayload {
-  INITIALIZING = "Initializing",
-  WAITING_FOR_PEERS = "Waiting for peers",
-  STARTING = "Starting the node",
-  READY = "Ready",
-}
 
 type EventListener = (event: CustomEvent) => void;
 
-interface IWaku {
-  init: (options: InitOptions) => void;
-  initEncoder: (options: InitOptions) => void;
-  addEventListener: (name: WakuEventsNames, fn: EventListener) => void;
-  removeEventListener: (name: WakuEventsNames, fn: EventListener) => void;
+const SECOND = 1000;
+const LOCAL_NODE = "http://127.0.0.1:8645/";
+const FILTER_URL = "/filter/v2/";
+const LIGHT_PUSH = "/lightpush/v1/";
+
+class Filter {
+  private readonly internalEmitter = new EventTarget();
+  private readonly subscriptionsEmitter = new EventTarget();
+
+  private contentTopicToRequestID: Map<string, string> = new Map();
+  private contentTopicListeners: Map<string, number> = new Map();
+
+  // only one content topic subscriptions is possible now
+  private subscriptionRoutine: undefined | number;
+
+  constructor() {
+    this.internalEmitter.addEventListener("subscribed", this.handleSubscribed.bind(this));
+    this.internalEmitter.addEventListener("unsubscribed", this.handleUnsubscribed.bind(this));
+  }
+  
+  private async handleSubscribed(_e: Event) {
+      const event = _e as CustomEvent;
+      const contentTopic = event.detail;
+      const numberOfListeners = this.contentTopicListeners.get(contentTopic);
+
+      // if nwaku node already subscribed to this content topic
+      if (numberOfListeners) {
+        this.contentTopicListeners.set(contentTopic, numberOfListeners + 1);
+        return;
+      }
+
+      const requestId = uuid();
+      await http.post(`${LOCAL_NODE}/${FILTER_URL}/subscriptions`, {
+          requestId,
+          contentFilters: [contentTopic],
+          pubsubTopic: PUBSUB_TOPIC
+      });
+
+      this.subscriptionRoutine = window.setInterval(async () => {
+        await this.fetchMessages();
+      }, SECOND);
+
+      this.contentTopicToRequestID.set(contentTopic, requestId);
+      this.contentTopicListeners.set(contentTopic, 1);
+  }
+
+  private async handleUnsubscribed(_e: Event) {
+    const event = _e as CustomEvent;
+    const contentTopic = event.detail;
+    const requestId = this.contentTopicToRequestID.get(contentTopic);
+    const numberOfListeners = this.contentTopicListeners.get(contentTopic);
+
+    if (!numberOfListeners || !requestId) {
+      return;
+    }
+
+    if (numberOfListeners - 1 > 0) {
+      this.contentTopicListeners.set(contentTopic, numberOfListeners - 1);
+      return;
+    }
+
+    await http.delete(`${LOCAL_NODE}/${FILTER_URL}/subscriptions`, {
+      requestId,
+      contentFilters: [contentTopic],
+      pubsubTopic: PUBSUB_TOPIC
+    });
+
+    clearInterval(this.subscriptionRoutine);
+    this.contentTopicListeners.delete(contentTopic);
+    this.contentTopicToRequestID.delete(contentTopic);
+  }
+
+  private async fetchMessages(): Promise<void> {
+    const contentTopic = Object.keys(this.contentTopicListeners)[0];
+
+    if (!contentTopic) {
+      return;
+    }
+
+    const response = await http.get(`${LOCAL_NODE}/${FILTER_URL}/${encodeURIComponent(contentTopic)}`);
+    const body: Message[] = await response.json();
+
+    if (!body || !body.length) {
+      return;
+    }
+
+    this.subscriptionsEmitter.dispatchEvent(
+      new CustomEvent(contentTopic, { detail: body })
+    );
+  }
+
+  public addEventListener(contentTopic: string, fn: EventListener) {
+    this.emitSubscribedEvent(contentTopic);
+    return this.subscriptionsEmitter.addEventListener(contentTopic, fn as any);
+  }
+
+  public removeEventListener(contentTopic: string, fn: EventListener) {
+    this.emitUnsubscribedEvent(contentTopic);
+    return this.subscriptionsEmitter.removeEventListener(contentTopic, fn as any);
+  }
+
+  private emitSubscribedEvent(contentTopic: string) {
+    this.internalEmitter.dispatchEvent(new CustomEvent("subscribed", { detail: contentTopic }));
+  }
+
+  private emitUnsubscribedEvent(contentTopic: string) {
+    this.internalEmitter.dispatchEvent(new CustomEvent("unsubscribed", { detail: contentTopic }));
+  }
 }
 
-export class Waku implements IWaku {
-  private contentTopic = CONTENT_TOPIC;
-  private readonly emitter = new EventTarget();
-
-  public node: undefined | LightNode;
-
-  private encoder: undefined | RLNEncoder;
-  private decoder: undefined | RLNDecoder<IDecodedMessage>;
-
-  private initialized = false;
-  private initializing = false;
-
+class LightPush {
   constructor() {}
 
-  public async init(options: InitOptions) {
-    if (this.initialized || this.initializing || !options.rln.rlnInstance) {
-      return;
-    }
-
-    this.initializing = true;
-
-    this.initEncoder(options);
-    this.decoder = new RLNDecoder(
-      options.rln.rlnInstance,
-      createDecoder(this.contentTopic)
-    );
-
-    if (!this.node) {
-      this.emitStatusEvent(WakuStatusEventPayload.INITIALIZING);
-      this.node = await createLightNode({ defaultBootstrap: true });
-      this.emitStatusEvent(WakuStatusEventPayload.STARTING);
-      await this.node.start();
-      this.emitStatusEvent(WakuStatusEventPayload.WAITING_FOR_PEERS);
-      await waitForRemotePeer(this.node);
-      this.emitStatusEvent(WakuStatusEventPayload.READY);
-
-      if (options.rln.rlnContract) {
-        await this.subscribeToMessages({
-          node: this.node,
-          decoder: this.decoder,
-          rlnContract: options.rln.rlnContract,
-        });
-      }
-    }
-
-    this.initialized = true;
-    this.initializing = false;
-  }
-
-  public initEncoder(options: InitOptions) {
-    const { rln, membershipID, credentials } = options;
-    if (!rln.rlnInstance) {
-      return;
-    }
-
-    this.encoder = new RLNEncoder(
-      createEncoder({
-        ephemeral: false,
-        contentTopic: this.contentTopic,
-      }),
-      rln.rlnInstance,
-      membershipID,
-      credentials
-    );
-  }
-
-  public async sendMessage(nick: string, text: string): Promise<void> {
-    if (!this.node || !this.encoder) {
-      return;
-    }
-
-    const timestamp = new Date();
-    const msg = ProtoChatMessage.create({
-      text,
-      nick,
-      timestamp: Math.floor(timestamp.valueOf() / 1000),
+  public async send(message: Message): Promise<void> {
+    await http.post(`${LOCAL_NODE}/${LIGHT_PUSH}/message`, {
+      pubsubTopic: PUBSUB_TOPIC,
+      message,
     });
-    const payload = ProtoChatMessage.encode(msg).finish();
-    console.log("Sending message with proof...");
-
-    await this.node.lightPush.send(this.encoder, { payload, timestamp });
-    console.log("Message sent!");
-  }
-
-  private async subscribeToMessages(options: SubscribeOptions) {
-    await options.node.filter.subscribe(options.decoder, (message) => {
-      try {
-        const { timestamp, nick, text } = ProtoChatMessage.decode(
-          message.payload
-        ) as unknown as ProtoChatMessageType;
-
-        let proofStatus = "no proof";
-        if (message.rateLimitProof) {
-          console.log("Proof received: ", message.rateLimitProof);
-
-          try {
-            console.time("Proof verification took:");
-            const res = message.verify(options.rlnContract.roots());
-            console.timeEnd("Proof verification took:");
-            proofStatus = res ? "verified" : "not verified";
-          } catch (error) {
-            proofStatus = "invalid";
-            console.error("Failed to verify proof: ", error);
-          }
-        }
-
-        this.emitMessageEvent({
-          nick,
-          text,
-          proofStatus,
-          time: new Date(timestamp).toDateString(),
-        });
-      } catch (error) {
-        console.error("Failed in subscription listener: ", error);
-      }
-    });
-  }
-
-  public addEventListener(name: WakuEventsNames, fn: EventListener) {
-    return this.emitter.addEventListener(name, fn as any);
-  }
-
-  public removeEventListener(name: WakuEventsNames, fn: EventListener) {
-    return this.emitter.removeEventListener(name, fn as any);
-  }
-
-  private emitStatusEvent(payload: WakuStatusEventPayload) {
-    this.emitter.dispatchEvent(
-      new CustomEvent(WakuEventsNames.Status, { detail: payload })
-    );
-  }
-
-  private emitMessageEvent(payload: MessageContent) {
-    this.emitter.dispatchEvent(
-      new CustomEvent(WakuEventsNames.Message, { detail: payload })
-    );
   }
 }
 
-export const waku = new Waku();
+export const waku = {
+  filter: new Filter(),
+  lightPush: new LightPush(),
+};

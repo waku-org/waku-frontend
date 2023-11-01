@@ -1,15 +1,11 @@
 import React from "react";
 import { Block } from "@/components/Block";
 import { Subtitle } from "@/components/Subtitle";
-import { Status } from "@/components/Status";
 import { Button } from "@/components/Button";
-import { useStore, useWaku } from "@/hooks";
-import { MessageContent } from "@/services/waku";
+import { MessageContent, useWaku } from "@/hooks";
 
 export const Waku: React.FunctionComponent<{}> = () => {
-  const { wakuStatus } = useStore();
   const { onSend, messages } = useWaku();
-
   const { nick, text, onNickChange, onMessageChange, resetText } = useMessage();
 
   const onSendClick = async () => {
@@ -106,7 +102,7 @@ function renderMessage(content: MessageContent) {
       <p>
         <span className="text-lg">{content.nick}</span>
         <span className="text-sm font-bold">
-          ({content.proofStatus}, {content.time})
+          ({content.time})
         </span>
         :
       </p>
