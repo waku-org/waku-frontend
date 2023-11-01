@@ -26,7 +26,5 @@ jobs:
         with:
           push: true
           # temporal, migrate to waku-org
-          tags: alrevuelta/waku-frontend:${{ steps.commit.outputs.short }}
-          flavor: |
-            latest=true
+          tags: alrevuelta/waku-frontend:${{ steps.commit.outputs.short }} , alrevuelta/waku-frontend:latest
           build-args: BUILD_VERSION=${{ steps.commit.outputs.hash }}
