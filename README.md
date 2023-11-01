@@ -23,3 +23,10 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 npm run build
 npm run serve
 ```
+
+## To run in docker
+
+```bash
+docker build -t waku_frontend .
+docker run -d -p 3000:3000 -p waku_frontend
+```
