@@ -133,7 +133,7 @@ export class RLN implements IRLN {
   }
 
   public async saveKeystore() {
-    // localStorage.setItem("keystore", this.keystore.toString());
+    localStorage.setItem("keystore", this.keystore.toString());
     this.emitKeystoreKeys();
   }
 
