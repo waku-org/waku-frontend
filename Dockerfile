@@ -1,8 +1,4 @@
-FROM node:18
-WORKDIR /app
-RUN npm i -g serve
-RUN mkdir -p ./_next
-COPY ./out/* ./
-COPY ./out/_next ./_next
-EXPOSE 3000
-CMD ["npx", "serve", "./"]
+FROM httpd:2.4
+RUN mkdir -p /usr/local/apache2/htdocs/_next
+COPY ./out/* /usr/local/apache2/htdocs/
+COPY ./out/_next /usr/local/apache2/htdocs/_next
