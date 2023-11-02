@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "serve": "serve ./out"
+    "lint": "next lint"
   },
   "dependencies": {
     "@waku/rln": "0.1.1-7e8cb89",
@@ -29,7 +28,6 @@
     "eslint": "^8",
     "eslint-config-next": "13.5.6",
     "postcss": "^8",
-    "serve": "^14.2.1",
     "tailwindcss": "^3",
     "typescript": "^5"
   }
