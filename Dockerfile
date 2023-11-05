@@ -1,8 +1,4 @@
-FROM node:18
-WORKDIR /app
-COPY package*.json ./  
-RUN npm ci
-COPY . .  
-RUN npm run build  
-EXPOSE 3000
-CMD ["npm", "run", "serve"]
+FROM httpd:2.4
+RUN mkdir -p /usr/local/apache2/htdocs/_next
+COPY ./out/* /usr/local/apache2/htdocs/
+COPY ./out/_next /usr/local/apache2/htdocs/_next
