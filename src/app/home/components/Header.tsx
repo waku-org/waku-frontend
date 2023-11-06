@@ -17,7 +17,6 @@ export const Header: React.FunctionComponent<{}> = () => {
         </Button>
       </Block>
       <Status text="Application status" mark={appStatus} />
-      
     </>
   );
 };

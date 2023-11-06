@@ -2,16 +2,14 @@ import React from "react";
 import { useStore } from "./useStore";
 import { isEthereumEvenEmitterValid } from "@/utils/ethereum";
 import { useRLN } from "./useRLN";
-import { SIGNATURE_MESSAGE } from "@/constants";
 
 type UseWalletResult = {
   onWalletConnect: () => void;
-  onGenerateCredentials: () => void;
 };
 
 export const useWallet = (): UseWalletResult => {
   const { rln } = useRLN();
-  const { setEthAccount, setChainID, setCredentials } = useStore();
+  const { setEthAccount, setChainID } = useStore();
 
   React.useEffect(() => {
     const ethereum = window.ethereum;
@@ -58,28 +56,7 @@ export const useWallet = (): UseWalletResult => {
     }
   };
 
-  const onGenerateCredentials = React.useCallback(async () => {
-    if (!rln?.ethProvider) {
-      console.log("Cannot generate credentials, no provider found.");
-      return;
-    }
-
-    const signer = rln.ethProvider.getSigner();
-    const signature = await signer.signMessage(
-      `${SIGNATURE_MESSAGE}. Nonce: ${randomNumber()}`
-    );
-    const credentials = await rln.rlnInstance?.generateSeededIdentityCredential(
-      signature
-    );
-    setCredentials(credentials);
-  }, [rln, setCredentials]);
-
   return {
     onWalletConnect,
-    onGenerateCredentials,
   };
 };
-
-function randomNumber(): number {
-  return Math.ceil(Math.random() * 1000);
-}

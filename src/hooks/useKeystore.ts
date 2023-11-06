@@ -3,6 +3,7 @@ import { useStore } from "./useStore";
 import { useRLN } from "./useRLN";
 import { SEPOLIA_CONTRACT } from "@waku/rln";
 import { StatusEventPayload } from "@/services/rln";
+import { SIGNATURE_MESSAGE } from "@/constants";
 
 type UseKeystoreResult = {
   onReadCredentials: (hash: string, password: string) => void;
@@ -12,20 +13,43 @@ type UseKeystoreResult = {
 export const useKeystore = (): UseKeystoreResult => {
   const { rln } = useRLN();
   const {
-    credentials,
     setActiveCredential,
     setActiveMembershipID,
     setAppStatus,
     setCredentials,
   } = useStore();
 
+  const generateCredentials = async () => {
+    if (!rln?.ethProvider) {
+      console.log("Cannot generate credentials, no provider found.");
+      return;
+    }
+
+    const signer = rln.ethProvider.getSigner();
+    const signature = await signer.signMessage(
+      `${SIGNATURE_MESSAGE}. Nonce: ${randomNumber()}`
+    );
+    const credentials = await rln.rlnInstance?.generateSeededIdentityCredential(
+      signature
+    );
+    return credentials;
+  };
+
   const onRegisterCredentials = React.useCallback(
     async (password: string) => {
-      if (!credentials || !rln?.rlnContract || !password) {
+      if (!rln?.rlnContract || !password) {
+        console.log(`Not registering - missing dependencies: contract-${!!rln?.rlnContract}, password-${!!password}`);
         return;
       }
 
       try {
+        const credentials = await generateCredentials();
+
+        if (!credentials) {
+          console.log("No credentials registered.");
+          return;
+        }
+
         setAppStatus(StatusEventPayload.CREDENTIALS_REGISTERING);
         const membershipInfo = await rln.rlnContract.registerWithKey(
           credentials
@@ -42,7 +66,9 @@ export const useKeystore = (): UseKeystoreResult => {
           },
           password
         );
+
         setActiveCredential(keystoreHash);
+        setCredentials(credentials);
         setActiveMembershipID(membershipID);
         rln.saveKeystore();
         setAppStatus(StatusEventPayload.CREDENTIALS_REGISTERED);
@@ -52,7 +78,7 @@ export const useKeystore = (): UseKeystoreResult => {
         return;
       }
     },
-    [credentials, rln, setActiveCredential, setActiveMembershipID, setAppStatus]
+    [rln, setActiveCredential, setActiveMembershipID, setAppStatus]
   );
 
   const onReadCredentials = React.useCallback(
@@ -81,3 +107,7 @@ export const useKeystore = (): UseKeystoreResult => {
     onReadCredentials,
   };
 };
+
+function randomNumber(): number {
+  return Math.ceil(Math.random() * 1000);
+}
