@@ -29,5 +29,5 @@ npm run serve
 ```bash
 npm run build
 docker build -t waku_frontend .
-docker run -d -p 300:3000 waku_frontend
+docker run -d -p 8080:80 waku_frontend
 ```
