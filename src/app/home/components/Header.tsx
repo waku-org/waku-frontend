@@ -5,7 +5,7 @@ import { useStore, useWallet } from "@/hooks";
 import { Button } from "@/components/Button";
 
 export const Header: React.FunctionComponent<{}> = () => {
-  const { appStatus } = useStore();
+  const { appStatus, wallet } = useStore();
   const { onWalletConnect } = useWallet();
 
   return (
@@ -17,6 +17,7 @@ export const Header: React.FunctionComponent<{}> = () => {
         </Button>
       </Block>
       <Status text="Application status" mark={appStatus} />
+      {wallet && <p className="mt-3 text-sm">Wallet connected: {wallet}</p> }
     </>
   );
 };

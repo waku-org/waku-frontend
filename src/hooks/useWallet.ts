@@ -9,7 +9,7 @@ type UseWalletResult = {
 
 export const useWallet = (): UseWalletResult => {
   const { rln } = useRLN();
-  const { setEthAccount, setChainID, setWalletConnected } = useStore();
+  const { setEthAccount, setChainID, setWallet } = useStore();
 
   React.useEffect(() => {
     const ethereum = window.ethereum;
@@ -49,9 +49,9 @@ export const useWallet = (): UseWalletResult => {
     }
     
     try {
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' }) as unknown as string[];
       await rln.initRLNContract(rln.rlnInstance);
-      setWalletConnected();
+      setWallet(accounts?.[0] || "");
     } catch(error) {
       console.error("Failed to conenct to wallet.");
     }

@@ -6,7 +6,7 @@ import { useRLN, useStore } from "@/hooks";
 import { useKeystore } from "@/hooks/useKeystore";
 
 export const Keystore: React.FunctionComponent<{}> = () => {
-  const { walletConnected, keystoreCredentials } = useStore();
+  const { wallet, keystoreCredentials } = useStore();
   const { onReadCredentials, onRegisterCredentials } = useKeystore();
 
   const { password, onPasswordChanged } = usePassword();
@@ -65,9 +65,9 @@ export const Keystore: React.FunctionComponent<{}> = () => {
       <Block className="mt-4">
         <p className="text-s mb-2">Generate new credentials from wallet and register on chain</p>
         <Button
-          disabled={!walletConnected}
+          disabled={!wallet || !password}
           onClick={() => onRegisterCredentials(password)}
-          className={walletConnected ? "" : "cursor-not-allowed"}
+          className={wallet && password ? "" : "cursor-not-allowed"}
         >
           Register new credentials
         </Button>
