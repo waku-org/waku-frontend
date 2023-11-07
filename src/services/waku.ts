@@ -11,7 +11,7 @@ export type Message = {
 type EventListener = (event: CustomEvent) => void;
 
 const SECOND = 1000;
-const LOCAL_NODE = "http://127.0.0.1:8645/";
+const LOCAL_NODE = "http://127.0.0.1:8645";
 const RELAY = "/relay/v1";
 
 const buildURL = (endpoint: string) => `${LOCAL_NODE}${endpoint}`;
