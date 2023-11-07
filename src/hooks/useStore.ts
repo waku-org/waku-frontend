@@ -22,6 +22,9 @@ type StoreResult = {
 
   wakuStatus: string;
   setWakuStatus: (v: string) => void;
+
+  walletConnected: boolean;
+  setWalletConnected: () => void;
 };
 
 const DEFAULT_VALUE = "none";
@@ -41,6 +44,9 @@ export const useStore = create<StoreResult>((set) => {
     credentials: undefined,
     setCredentials: (v: undefined | IdentityCredential) =>
       set((state) => ({ ...state, credentials: v })),
+
+    walletConnected: false,
+    setWalletConnected: () => set((state) => ({ ...state, walletConnected: true })),
   };
 
   const wakuModule = {
