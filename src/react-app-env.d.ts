@@ -4,7 +4,7 @@ type EthereumEvents = "accountsChanged" | "chainChanged";
 type EthereumEventListener = (v: any) => void;
 
 type Ethereum = {
-  request: () => void;
+  request: (v?: any) => Promise<void>;
   on: (name: EthereumEvents, fn: EthereumEventListener) => void;
   removeListener: (name: EthereumEvents, fn: EthereumEventListener) => void;
 };

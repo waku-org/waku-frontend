@@ -28,16 +28,16 @@ export const useWaku = () => {
       setMessages((prev) => [...prev, ...parsedMessaged]);
     };
 
-    waku.filter.addEventListener(CONTENT_TOPIC, messageListener);
+    waku.relay.addEventListener(CONTENT_TOPIC, messageListener);
 
     return () => {
-      waku.filter.removeEventListener(CONTENT_TOPIC, messageListener);
+      waku.relay.removeEventListener(CONTENT_TOPIC, messageListener);
     };
   }, [setMessages]);
 
   const onSend = React.useCallback(
     async (nick: string, text: string) => {
-      await waku.lightPush.send({
+      await waku.relay.send({
         version: 0,
         timestamp: Date.now(),
         contentTopic: CONTENT_TOPIC,

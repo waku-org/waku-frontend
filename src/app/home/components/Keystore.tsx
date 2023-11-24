@@ -2,12 +2,11 @@ import React from "react";
 import { Block, BlockTypes } from "@/components/Block";
 import { Button } from "@/components/Button";
 import { Subtitle } from "@/components/Subtitle";
-import { useRLN, useStore, useWallet } from "@/hooks";
+import { useRLN, useStore } from "@/hooks";
 import { useKeystore } from "@/hooks/useKeystore";
 
 export const Keystore: React.FunctionComponent<{}> = () => {
-  const { keystoreCredentials } = useStore();
-  const { onGenerateCredentials } = useWallet();
+  const { wallet, keystoreCredentials } = useStore();
   const { onReadCredentials, onRegisterCredentials } = useKeystore();
 
   const { password, onPasswordChanged } = usePassword();
@@ -64,15 +63,13 @@ export const Keystore: React.FunctionComponent<{}> = () => {
       </Block>
 
       <Block className="mt-4">
-        <p className="text-s mb-2">Generate new credentials from wallet</p>
-        <Button onClick={onGenerateCredentials}>
-          Generate new credentials
-        </Button>
+        <p className="text-s mb-2">Generate new credentials from wallet and register on chain</p>
         <Button
-          className="ml-5"
+          disabled={!wallet || !password}
           onClick={() => onRegisterCredentials(password)}
+          className={wallet && password ? "" : "cursor-not-allowed"}
         >
-          Register credentials
+          Register new credentials
         </Button>
       </Block>
 

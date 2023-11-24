@@ -15,6 +15,7 @@ export enum RLNEventsNames {
 
 export enum StatusEventPayload {
   WASM_LOADING = "WASM Blob download in progress...",
+  WASM_LOADED = "WASM Blob downloaded",
   WASM_FAILED = "Failed to download WASM, check console",
   CONTRACT_LOADING = "Connecting to RLN contract",
   CONTRACT_FAILED = "Failed to connect to RLN contract",
@@ -63,10 +64,7 @@ export class RLN implements IRLN {
     }
 
     this.initializing = true;
-    const rlnInstance = await this.initRLNWasm();
-    await this.initRLNContract(rlnInstance);
-
-    this.emitStatusEvent(StatusEventPayload.RLN_INITIALIZED);
+    await this.initRLNWasm();
 
     // emit keystore keys once app is ready
     this.emitKeystoreKeys();
@@ -75,11 +73,10 @@ export class RLN implements IRLN {
     this.initializing = false;
   }
 
-  private async initRLNWasm(): Promise<RLNInstance> {
+  private async initRLNWasm(): Promise<void> {
     this.emitStatusEvent(StatusEventPayload.WASM_LOADING);
     try {
       this.rlnInstance = await create();
-      return this.rlnInstance;
     } catch (error) {
       console.error(
         "Failed at fetching WASM and creating RLN instance: ",
@@ -88,9 +85,14 @@ export class RLN implements IRLN {
       this.emitStatusEvent(StatusEventPayload.WASM_FAILED);
       throw error;
     }
+    this.emitStatusEvent(StatusEventPayload.WASM_LOADED);
   }
 
-  private async initRLNContract(rlnInstance: RLNInstance): Promise<void> {
+  public async initRLNContract(rlnInstance: RLNInstance): Promise<void> {
+    if (this.rlnContract) {
+      return;
+    }
+
     this.emitStatusEvent(StatusEventPayload.CONTRACT_LOADING);
     try {
       this.rlnContract = await RLNContract.init(rlnInstance, {
@@ -102,6 +104,7 @@ export class RLN implements IRLN {
       this.emitStatusEvent(StatusEventPayload.CONTRACT_FAILED);
       throw error;
     }
+    this.emitStatusEvent(StatusEventPayload.RLN_INITIALIZED);
   }
 
   private initKeystore(): Keystore {

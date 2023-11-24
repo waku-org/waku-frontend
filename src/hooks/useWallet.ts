@@ -2,15 +2,14 @@ import React from "react";
 import { useStore } from "./useStore";
 import { isEthereumEvenEmitterValid } from "@/utils/ethereum";
 import { useRLN } from "./useRLN";
-import { SIGNATURE_MESSAGE } from "@/constants";
 
 type UseWalletResult = {
-  onGenerateCredentials: () => void;
+  onWalletConnect: () => void;
 };
 
 export const useWallet = (): UseWalletResult => {
   const { rln } = useRLN();
-  const { setEthAccount, setChainID, setCredentials } = useStore();
+  const { setEthAccount, setChainID, setWallet } = useStore();
 
   React.useEffect(() => {
     const ethereum = window.ethereum;
@@ -36,27 +35,29 @@ export const useWallet = (): UseWalletResult => {
     };
   }, [setEthAccount, setChainID]);
 
-  const onGenerateCredentials = React.useCallback(async () => {
-    if (!rln?.ethProvider) {
-      console.log("Cannot generate credentials, no provider found.");
+  const onWalletConnect = async () => {
+    const ethereum = window.ethereum;
+    
+    if (!ethereum) {
+      console.log("No ethereum instance found.");
       return;
     }
 
-    const signer = rln.ethProvider.getSigner();
-    const signature = await signer.signMessage(
-      `${SIGNATURE_MESSAGE}. Nonce: ${randomNumber()}`
-    );
-    const credentials = await rln.rlnInstance?.generateSeededIdentityCredential(
-      signature
-    );
-    setCredentials(credentials);
-  }, [rln, setCredentials]);
+    if (!rln?.rlnInstance) {
+      console.log("RLN instance is not initialized.");
+      return;
+    }
+    
+    try {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' }) as unknown as string[];
+      await rln.initRLNContract(rln.rlnInstance);
+      setWallet(accounts?.[0] || "");
+    } catch(error) {
+      console.error("Failed to conenct to wallet.");
+    }
+  };
 
   return {
-    onGenerateCredentials,
+    onWalletConnect,
   };
 };
-
-function randomNumber(): number {
-  return Math.ceil(Math.random() * 1000);
-}

@@ -2,7 +2,9 @@ import React from "react";
 import { Block } from "@/components/Block";
 import { Subtitle } from "@/components/Subtitle";
 import { Button } from "@/components/Button";
+import { Status } from "@/components/Status";
 import { MessageContent, useWaku } from "@/hooks";
+import { CONTENT_TOPIC } from "@/constants";
 
 export const Waku: React.FunctionComponent<{}> = () => {
   const { onSend, messages } = useWaku();
@@ -20,9 +22,12 @@ export const Waku: React.FunctionComponent<{}> = () => {
 
   return (
     <Block className="mt-10">
-      <Subtitle>
-        Waku
-      </Subtitle>
+      <Block>
+        <Subtitle>
+          Waku
+        </Subtitle>
+        <p className="text-sm">Content topic: {CONTENT_TOPIC}</p>
+      </Block>
 
       <Block className="mt-4">
         <label

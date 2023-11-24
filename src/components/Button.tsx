@@ -1,12 +1,14 @@
 type ButtonProps = {
   children: any;
   className?: string;
+  disabled?: boolean;
   onClick?: (e?: any) => void;
 };
 
 export const Button: React.FunctionComponent<ButtonProps> = (props) => {
   return (
     <button
+      disabled={props.disabled}
       onClick={props.onClick}
       className={`${
         props.className || ""
