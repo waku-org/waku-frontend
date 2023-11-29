@@ -22,13 +22,6 @@ export const http = {
           });
     },
     get(url: string) {
-        return fetch(new URL(url), {
-            method: "GET",
-            mode: "no-cors",
-            referrerPolicy: "no-referrer", 
-            headers: {
-                'Content-Type': 'text/plain'
-            },
-        });
+        return fetch(new URL(url));
     }
 };
