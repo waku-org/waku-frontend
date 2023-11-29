@@ -83,7 +83,7 @@ class Relay {
     this.contentTopicListeners.delete(contentTopic);
   }
 
-  private async fetchMessages(): Promise<any> {
+  private async fetchMessages(): Promise<void> {
     const contentTopic = Array.from(this.contentTopicListeners.keys())[0];
 
     if (!contentTopic) {
