@@ -109,9 +109,12 @@ export class RLN implements IRLN {
 
   private initKeystore(): Keystore {
     const localKeystoreString = localStorage.getItem("keystore");
-    const _keystore = Keystore.fromString(localKeystoreString || "");
-
-    return _keystore || Keystore.create();
+    
+    try {
+      return Keystore.fromString(localKeystoreString || "");
+    } catch(error) {
+      return Keystore.create();
+    }
   }
 
   public addEventListener(name: RLNEventsNames, fn: EventListener) {

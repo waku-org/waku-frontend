@@ -5,9 +5,7 @@ export const http = {
             mode: "no-cors",
             referrerPolicy: "no-referrer", 
             headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                "Access-Control-Allow-Origin": "*",
+                'Content-Type': 'text/plain',
             },
             body: JSON.stringify(body)
           });
@@ -18,9 +16,7 @@ export const http = {
             mode: "no-cors",
             referrerPolicy: "no-referrer", 
             headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                "Access-Control-Allow-Origin": "*",
+                'Content-Type': 'text/plain',
             },
             body: JSON.stringify(body)
           });

@@ -53,7 +53,7 @@ class Relay {
 
       this.subscriptionRoutine = window.setInterval(async () => {
         await this.fetchMessages();
-      }, SECOND);
+      }, 10 * SECOND);
 
       this.contentTopicListeners.set(contentTopic, 1);
     } catch (error) {
@@ -84,7 +84,7 @@ class Relay {
   }
 
   private async fetchMessages(): Promise<void> {
-    const contentTopic = Object.keys(this.contentTopicListeners)[0];
+    const contentTopic = Array.from(this.contentTopicListeners.keys())[0];
 
     if (!contentTopic) {
       return;
