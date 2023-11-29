@@ -53,7 +53,7 @@ class Relay {
 
       this.subscriptionRoutine = window.setInterval(async () => {
         await this.fetchMessages();
-      }, SECOND);
+      }, 10 * SECOND);
 
       this.contentTopicListeners.set(contentTopic, 1);
     } catch (error) {
@@ -83,8 +83,8 @@ class Relay {
     this.contentTopicListeners.delete(contentTopic);
   }
 
-  private async fetchMessages(): Promise<void> {
-    const contentTopic = Object.keys(this.contentTopicListeners)[0];
+  private async fetchMessages(): Promise<any> {
+    const contentTopic = Array.from(this.contentTopicListeners.keys())[0];
 
     if (!contentTopic) {
       return;

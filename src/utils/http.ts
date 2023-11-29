@@ -5,9 +5,7 @@ export const http = {
             mode: "no-cors",
             referrerPolicy: "no-referrer", 
             headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                "Access-Control-Allow-Origin": "*",
+                'Content-Type': 'text/plain',
             },
             body: JSON.stringify(body)
           });
@@ -18,14 +16,19 @@ export const http = {
             mode: "no-cors",
             referrerPolicy: "no-referrer", 
             headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                "Access-Control-Allow-Origin": "*",
+                'Content-Type': 'text/plain',
             },
             body: JSON.stringify(body)
           });
     },
     get(url: string) {
-        return fetch(new URL(url));
+        return fetch(new URL(url), {
+            method: "GET",
+            mode: "no-cors",
+            referrerPolicy: "no-referrer", 
+            headers: {
+                'Content-Type': 'text/plain'
+            },
+        });
     }
 };
