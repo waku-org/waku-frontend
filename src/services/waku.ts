@@ -32,7 +32,6 @@ class Relay {
   }
 
   public removeEventListener(contentTopic: string, fn: EventListener) {
-    this.handleUnsubscribed(contentTopic);
     return this.subscriptionsEmitter.removeEventListener(
       contentTopic,
       fn as any
@@ -53,7 +52,7 @@ class Relay {
 
       this.subscriptionRoutine = window.setInterval(async () => {
         await this.fetchMessages();
-      }, 10 * SECOND);
+      },  SECOND);
 
       this.contentTopicListeners.set(contentTopic, 1);
     } catch (error) {

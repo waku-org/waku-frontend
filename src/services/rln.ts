@@ -109,7 +109,7 @@ export class RLN implements IRLN {
 
   private initKeystore(): Keystore {
     const localKeystoreString = localStorage.getItem("keystore");
-    
+
     try {
       return Keystore.fromString(localKeystoreString || "");
     } catch(error) {

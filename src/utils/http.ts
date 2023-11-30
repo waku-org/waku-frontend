@@ -2,7 +2,6 @@ export const http = {
     post(url: string, body: any) {
         return fetch(new URL(url), {
             method: "POST",
-            mode: "no-cors",
             referrerPolicy: "no-referrer", 
             headers: {
                 'Content-Type': 'text/plain',
@@ -13,8 +12,6 @@ export const http = {
     delete(url: string, body: any) {
         return fetch(new URL(url), {
             method: "DELETE",
-            mode: "no-cors",
-            referrerPolicy: "no-referrer", 
             headers: {
                 'Content-Type': 'text/plain',
             },

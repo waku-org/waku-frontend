@@ -103,11 +103,11 @@ function useMessage() {
 
 function renderMessage(content: MessageContent) {
   return (
-    <li key={`${content.nick}-${content.time}`} className="mb-4">
+    <li key={`${content.nick}-${content.timestamp}-${content.text}`} className="mb-4">
       <p>
         <span className="text-lg">{content.nick}</span>
         <span className="text-sm font-bold">
-          ({content.time})
+          ({(new Date(content.timestamp)).toString()})
         </span>
         :
       </p>
