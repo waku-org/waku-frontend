@@ -14,7 +14,7 @@ export default function KeystorePage() {
     return (
       <main className="flex min-h-screen flex-col p-6 font-mono max-w-screen-lg">
         <Header />
-        <p className="text-xl">Seems you don't have MetaMask installed. Please, install and reload the page.</p>
+        <p className="text-xl">Seems you don not have MetaMask installed. Please, install and reload the page.</p>
       </main>
     );
   }
@@ -23,7 +23,7 @@ export default function KeystorePage() {
     <main className="flex min-h-screen flex-col p-6 font-mono max-w-screen-lg">
       <Header onWalletConnect={onWalletConnect}>
         <Status text="Application status" mark={appStatus} />
-        {wallet && <p className="mt-3 text-sm">Wallet connected: {wallet}</p> }
+        { wallet && <p className="mt-3 text-sm">Wallet connected: {wallet}</p> }
       </Header>
       <Keystore />
       <KeystoreDetails />
