@@ -1,13 +1,27 @@
 import React from "react";
-import { Block, BlockTypes } from "@/components/Block";
+import { Block } from "@/components/Block";
 import { Subtitle } from "@/components/Subtitle";
 import { Button } from "@/components/Button";
 import { MessageContent, useWaku } from "@/hooks";
-import { CONTENT_TOPIC } from "@/constants";
 
 export const Waku: React.FunctionComponent<{}> = () => {
-  const { onSend, messages } = useWaku();
-  const { nick, text, onNickChange, onMessageChange, resetText } = useMessage();
+  const {
+    onSend,
+    messages,
+    contentTopic: activeContentTopic,
+    onContentTopicChange: onActiveContentTopicChange
+  } = useWaku();
+  const {
+    nick,
+    text,
+    onNickChange,
+    onMessageChange,
+    resetText,
+  } = useMessage();
+  const {
+    contentTopic,
+    onContentTopicChange,
+  } = useContentTopic(activeContentTopic);
 
   const onSendClick = async () => {
     await onSend(nick, text);
@@ -26,7 +40,20 @@ export const Waku: React.FunctionComponent<{}> = () => {
           <Subtitle>
             Waku
           </Subtitle>
-          <p className="text-sm">Content topic: {CONTENT_TOPIC}</p>
+          <label
+            htmlFor="contentTopic-input"
+            className="block mb-2 mt-2 text-sm font-medium text-gray-900 dark:text-white"
+          >
+            Content topic
+          </label>
+          <input
+            type="text"
+            id="contentTopic-input"
+            value={contentTopic}
+            onChange={onContentTopicChange}
+            className="w-96 mr-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+          />
+          <Button className="mt-1" onClick={() => { onActiveContentTopicChange(contentTopic); }}>Change</Button>
         </Block>
 
         <Block className="mt-4 mr-10 min-w-fit">
@@ -75,6 +102,23 @@ export const Waku: React.FunctionComponent<{}> = () => {
     </Block>
   );
 };
+
+function useContentTopic(globalContentTopic: string) {
+  const [contentTopic, setContentTopic] = React.useState<string>(globalContentTopic);
+
+  React.useEffect(() => {
+    setContentTopic(globalContentTopic);
+  }, [globalContentTopic]);
+
+  const onContentTopicChange = (e: React.SyntheticEvent<HTMLInputElement>) => {
+    setContentTopic(e.currentTarget.value || "");
+  };
+
+  return {
+    contentTopic,
+    onContentTopicChange,
+  };
+}
 
 function useMessage() {
   const [nick, setNick] = React.useState<string>("");

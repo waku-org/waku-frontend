@@ -18,16 +18,13 @@ const buildURL = (endpoint: string) => `${LOCAL_NODE}${endpoint}`;
 
 class Relay {
   private readonly subscriptionsEmitter = new EventTarget();
-
-  private contentTopicListeners: Map<string, number> = new Map();
-
   // only one content topic subscriptions is possible now
   private subscriptionRoutine: undefined | number;
 
   constructor() {}
 
   public addEventListener(contentTopic: string, fn: EventListener) {
-    this.handleSubscribed(contentTopic);
+    this.subscribe(contentTopic);
     return this.subscriptionsEmitter.addEventListener(contentTopic, fn as any);
   }
 
@@ -38,12 +35,8 @@ class Relay {
     );
   }
 
-  private async handleSubscribed(contentTopic: string) {
-    const numberOfListeners = this.contentTopicListeners.get(contentTopic);
-
-    // if nwaku node already subscribed to this content topic
-    if (numberOfListeners) {
-      this.contentTopicListeners.set(contentTopic, numberOfListeners + 1);
+  private async subscribe(contentTopic: string) {
+    if (this.subscriptionRoutine) {
       return;
     }
 
@@ -53,22 +46,13 @@ class Relay {
       this.subscriptionRoutine = window.setInterval(async () => {
         await this.fetchMessages();
       },  5 * SECOND);
-
-      this.contentTopicListeners.set(contentTopic, 1);
     } catch (error) {
       console.error(`Failed to subscribe node ${contentTopic}:`, error);
     }
   }
 
-  private async handleUnsubscribed(contentTopic: string) {
-    const numberOfListeners = this.contentTopicListeners.get(contentTopic);
-
-    if (!numberOfListeners) {
-      return;
-    }
-
-    if (numberOfListeners - 1 > 0) {
-      this.contentTopicListeners.set(contentTopic, numberOfListeners - 1);
+  public async unsubscribe(contentTopic: string) {
+    if (!this.subscriptionRoutine) {
       return;
     }
 
@@ -79,16 +63,9 @@ class Relay {
     }
 
     clearInterval(this.subscriptionRoutine);
-    this.contentTopicListeners.delete(contentTopic);
   }
 
   private async fetchMessages(): Promise<void> {
-    const contentTopic = Array.from(this.contentTopicListeners.keys())[0];
-
-    if (!contentTopic) {
-      return;
-    }
-
     const response = await http.get(
       buildURL(`${RELAY}/messages/${encodeURIComponent(PUBSUB_TOPIC)}`)
     );
@@ -98,9 +75,27 @@ class Relay {
       return;
     }
 
-    this.subscriptionsEmitter.dispatchEvent(
-      new CustomEvent(contentTopic, { detail: body })
-    );
+    const messagesPerContentTopic = new Map<string, Message[]>();
+    body.forEach((m) => {
+      const contentTopic = m.contentTopic;
+      if (!contentTopic) {
+        return;
+      }
+
+      let messages = messagesPerContentTopic.get(contentTopic);
+      if (!messages) {
+        messages = [];
+      }
+
+      messages.push(m);
+      messagesPerContentTopic.set(contentTopic, messages);
+    });
+
+    Array.from(messagesPerContentTopic.entries()).forEach(([contentTopic, messages]) => {
+      this.subscriptionsEmitter.dispatchEvent(
+        new CustomEvent(contentTopic, { detail: messages })
+      );
+    });
   }
 
   public async send(message: Message): Promise<void> {

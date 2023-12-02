@@ -5,10 +5,11 @@ import { Message, waku } from "@/services/waku";
 export type MessageContent = {
   nick: string;
   text: string;
-  time: string;
+  timestamp: number;
 };
 
 export const useWaku = () => {
+  const [contentTopic, setContentTopic] = React.useState<string>(CONTENT_TOPIC);
   const [messages, setMessages] = React.useState<Map<string, MessageContent>>(new Map());
 
   React.useEffect(() => {
@@ -19,7 +20,7 @@ export const useWaku = () => {
       newMessages.forEach((m) => {
         const payload = JSON.parse(atob(m.payload));
 
-        const message = {
+        const message: MessageContent = {
           nick: payload?.nick || "unknown",
           text: payload?.text || "empty",
           timestamp: m.timestamp || Date.now(),
@@ -30,12 +31,12 @@ export const useWaku = () => {
       setMessages(nextMessages);
     };
 
-    waku.relay.addEventListener(CONTENT_TOPIC, messageListener);
+    waku.relay.addEventListener(contentTopic, messageListener);
 
     return () => {
-      waku.relay.removeEventListener(CONTENT_TOPIC, messageListener);
+      waku.relay.removeEventListener(contentTopic, messageListener);
     };
-  }, [messages, setMessages]);
+  }, [messages, setMessages, contentTopic]);
 
   const onSend = React.useCallback(
     async (nick: string, text: string) => {
@@ -62,5 +63,18 @@ export const useWaku = () => {
     [setMessages]
   );
 
-  return { onSend, messages: Array.from(messages.values()) };
+  const onContentTopicChange = async (nextContentTopic: string) => {
+    if (nextContentTopic === contentTopic) {
+      return;
+    }
+
+    setContentTopic(nextContentTopic);
+  };
+
+  return {
+    onSend,
+    contentTopic,
+    onContentTopicChange,
+    messages: Array.from(messages.values())
+  };
 };
