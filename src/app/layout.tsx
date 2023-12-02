@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "RLN Example",
-  description: "Showcases RLN, Keystore and generation of proofs",
+  title: "nwaku front-end",
+  description: "Send messages through you local node, register to RLN, read and export Keystore",
 };
 
 export default function RootLayout({
