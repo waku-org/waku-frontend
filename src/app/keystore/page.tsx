@@ -14,7 +14,7 @@ export default function KeystorePage() {
     return (
       <main className="flex min-h-screen flex-col p-6 font-mono max-w-screen-lg">
         <Header />
-        <p className="text-xl">Seems you don not have MetaMask installed. Please, install and reload the page.</p>
+        <p className="text-xl">Seems you do not have MetaMask installed. Please, install and reload the page.</p>
       </main>
     );
   }
