@@ -52,7 +52,7 @@ class Relay {
 
       this.subscriptionRoutine = window.setInterval(async () => {
         await this.fetchMessages();
-      },  SECOND);
+      },  5 * SECOND);
 
       this.contentTopicListeners.set(contentTopic, 1);
     } catch (error) {
