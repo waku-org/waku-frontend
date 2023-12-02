@@ -2,7 +2,6 @@ import React from "react";
 import { Block } from "@/components/Block";
 import { Subtitle } from "@/components/Subtitle";
 import { Button } from "@/components/Button";
-import { Status } from "@/components/Status";
 import { MessageContent, useWaku } from "@/hooks";
 import { CONTENT_TOPIC } from "@/constants";
 
@@ -107,7 +106,7 @@ function renderMessage(content: MessageContent) {
       <p>
         <span className="text-lg">{content.nick}</span>
         <span className="text-sm font-bold">
-          ({(new Date(content.timestamp)).toString()})
+          ({(new Date(content.timestamp)).toDateString()})
         </span>
         :
       </p>
