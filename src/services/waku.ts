@@ -17,6 +17,7 @@ const RELAY = "/relay/v1";
 const buildURL = (endpoint: string) => `${LOCAL_NODE}${endpoint}`;
 
 class Relay {
+  private subscribing = false;
   private readonly subscriptionsEmitter = new EventTarget();
   // only one content topic subscriptions is possible now
   private subscriptionRoutine: undefined | number;
@@ -24,7 +25,7 @@ class Relay {
   constructor() {}
 
   public addEventListener(contentTopic: string, fn: EventListener) {
-    this.subscribe(contentTopic);
+    this.subscribe();
     return this.subscriptionsEmitter.addEventListener(contentTopic, fn as any);
   }
 
@@ -35,11 +36,12 @@ class Relay {
     );
   }
 
-  private async subscribe(contentTopic: string) {
-    if (this.subscriptionRoutine) {
+  private async subscribe() {
+    if (this.subscriptionRoutine || this.subscribing) {
       return;
     }
 
+    this.subscribing = true;
     try {
       await http.post(buildURL(`${RELAY}/subscriptions`), [PUBSUB_TOPIC]);
 
@@ -47,11 +49,12 @@ class Relay {
         await this.fetchMessages();
       },  5 * SECOND);
     } catch (error) {
-      console.error(`Failed to subscribe node ${contentTopic}:`, error);
+      console.error(`Failed to subscribe node ${PUBSUB_TOPIC}:`, error);
     }
+    this.subscribing = false;
   }
 
-  public async unsubscribe(contentTopic: string) {
+  public async unsubscribe() {
     if (!this.subscriptionRoutine) {
       return;
     }
@@ -59,10 +62,11 @@ class Relay {
     try {
       await http.delete(buildURL(`${RELAY}/subscriptions`), [PUBSUB_TOPIC]);
     } catch (error) {
-      console.error(`Failed to unsubscribe node from ${contentTopic}:`, error);
+      console.error(`Failed to unsubscribe node from ${PUBSUB_TOPIC}:`, error);
     }
 
     clearInterval(this.subscriptionRoutine);
+    this.subscriptionRoutine = undefined;
   }
 
   private async fetchMessages(): Promise<void> {
@@ -103,6 +107,92 @@ class Relay {
   }
 }
 
+type DebugInfoResponse = {
+  enrUri: string;
+  listenAddresses: string[];
+}
+
+export type DebugInfo = {
+  health: string;
+  version: string;
+} & DebugInfoResponse;
+
+class Debug {
+  private subscribing = false;
+  private readonly subscriptionsEmitter = new EventTarget();
+  private subscriptionRoutine: undefined | number;
+
+  constructor() {}
+
+  public addEventListener(event: string, fn: EventListener) {
+    this.subscribe();
+    return this.subscriptionsEmitter.addEventListener(event, fn as any);
+  }
+
+  public removeEventListener(event: string, fn: EventListener) {
+    return this.subscriptionsEmitter.removeEventListener(
+      event,
+      fn as any
+    );
+  }
+
+  private async subscribe() {
+    if (this.subscriptionRoutine || this.subscribing) {
+      return;
+    }
+
+    this.subscribing = true;
+    try {
+      await this.fetchParameters();
+      this.subscriptionRoutine = window.setInterval(async () => {
+        await this.fetchParameters();
+      },  30 * SECOND);
+    } catch(error) {
+      console.error("Failed to fetch debug info:", error);
+    }
+    this.subscribing = false;
+  }
+
+  private async unsubscribe() {
+    if (!this.subscriptionRoutine) {
+      return;
+    }
+    clearInterval(this.subscriptionRoutine);
+    this.subscriptionRoutine = undefined;
+  }
+
+  private async fetchParameters(): Promise<void> {
+    const health = await this.fetchHealth();
+    const debug = await this.fetchDebugInfo();
+    const version = await this.fetchDebugVersion();
+
+    this.subscriptionsEmitter.dispatchEvent(
+      new CustomEvent("debug", { detail: {
+        health,
+        version,
+        ...debug,
+      } })
+    );
+  }
+
+  private async fetchHealth(): Promise<string> {
+    const response = await http.get(buildURL(`/health`));
+    return response.text();
+  }
+
+  private async fetchDebugInfo(): Promise<DebugInfoResponse> {
+    const response = await http.get(buildURL(`/debug/v1/info`));
+    const body: DebugInfoResponse = await response.json();
+    return body;
+  }
+
+  private async fetchDebugVersion(): Promise<string> {
+    const response = await http.get(buildURL(`/debug/v1/version`));
+    return response.text();
+  }
+}
+
 export const waku = {
   relay: new Relay(),
+  debug: new Debug(),
 };

@@ -1,6 +1,6 @@
 import React from "react";
 import { CONTENT_TOPIC } from "@/constants";
-import { Message, waku } from "@/services/waku";
+import { DebugInfo, Message, waku } from "@/services/waku";
 
 export type MessageContent = {
   nick: string;
@@ -11,6 +11,7 @@ export type MessageContent = {
 export const useWaku = () => {
   const [contentTopic, setContentTopic] = React.useState<string>(CONTENT_TOPIC);
   const [messages, setMessages] = React.useState<Map<string, MessageContent>>(new Map());
+  const [debugInfo, setDebugInfo] = React.useState<undefined | DebugInfo>();
 
   React.useEffect(() => {
     const messageListener = (event: CustomEvent) => {
@@ -37,6 +38,25 @@ export const useWaku = () => {
       waku.relay.removeEventListener(contentTopic, messageListener);
     };
   }, [messages, setMessages, contentTopic]);
+
+
+  React.useEffect(() => {
+    const debugInfoListener = (event: CustomEvent) => {
+      const debugInfo = event.detail;
+
+      if (!debugInfo) {
+        return;
+      }
+
+      setDebugInfo(debugInfo);
+    };
+
+    waku.debug.addEventListener("debug", debugInfoListener);
+
+    return () => {
+      waku.debug.removeEventListener("debug", debugInfoListener);
+    };
+  }, [debugInfo, setDebugInfo]);
 
   const onSend = React.useCallback(
     async (nick: string, text: string) => {
@@ -73,6 +93,7 @@ export const useWaku = () => {
 
   return {
     onSend,
+    debugInfo,
     contentTopic,
     onContentTopicChange,
     messages: Array.from(messages.values())

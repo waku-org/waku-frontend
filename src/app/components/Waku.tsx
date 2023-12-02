@@ -2,15 +2,16 @@ import React from "react";
 import { Block } from "@/components/Block";
 import { Subtitle } from "@/components/Subtitle";
 import { Button } from "@/components/Button";
-import { MessageContent, useWaku } from "@/hooks";
+import { MessageContent } from "@/hooks";
 
-export const Waku: React.FunctionComponent<{}> = () => {
-  const {
-    onSend,
-    messages,
-    contentTopic: activeContentTopic,
-    onContentTopicChange: onActiveContentTopicChange
-  } = useWaku();
+type WakuProps = {
+  onSend: (nick: string, text: string) => Promise<void>;
+  activeContentTopic: string;
+  messages: MessageContent[];
+  onActiveContentTopicChange: (contentTopic: string) => void;
+}
+
+export const Waku: React.FunctionComponent<WakuProps> = (props) => {
   const {
     nick,
     text,
@@ -21,16 +22,16 @@ export const Waku: React.FunctionComponent<{}> = () => {
   const {
     contentTopic,
     onContentTopicChange,
-  } = useContentTopic(activeContentTopic);
+  } = useContentTopic(props.activeContentTopic);
 
   const onSendClick = async () => {
-    await onSend(nick, text);
+    await props.onSend(nick, text);
     resetText();
   };
 
   const renderedMessages = React.useMemo(
-    () => messages.map(renderMessage),
-    [messages]
+    () => props.messages.map(renderMessage),
+    [props.messages]
   );
 
   return (
@@ -53,7 +54,7 @@ export const Waku: React.FunctionComponent<{}> = () => {
             onChange={onContentTopicChange}
             className="w-96 mr-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
           />
-          <Button className="mt-1" onClick={() => { onActiveContentTopicChange(contentTopic); }}>Change</Button>
+          <Button className="mt-1" onClick={() => { props.onActiveContentTopicChange(contentTopic); }}>Change</Button>
         </Block>
 
         <Block className="mt-4 mr-10 min-w-fit">
