@@ -12,16 +12,16 @@ export const useContract = (): UseContractResult => {
 
   const onFetchContract = React.useCallback(async () => {
     const fetchAccounts = new Promise<void>(async (resolve) => {
-      if (!rln) {
+      if (!rln || !rln?.ethProvider) {
         console.log("Cannot fetch wallet, not provider found.");
         resolve();
         return;
       }
 
       try {
-        const accounts = await rln.ethProvider.send("eth_requestAccounts", []);
+        const accounts = await rln?.ethProvider.send("eth_requestAccounts", []);
         setEthAccount(accounts[0] || "");
-        const network = await rln.ethProvider.getNetwork();
+        const network = await rln?.ethProvider.getNetwork();
         setChainID(network.chainId);
       } catch (error) {
         console.error("Failed to connect to account: ", error);

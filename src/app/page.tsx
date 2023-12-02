@@ -4,7 +4,6 @@ import { Waku } from "@/app/components/Waku";
 import { useWaku } from "@/hooks";
 import { DebugInfo } from "@/services/waku";
 
-export const dynamic = "force-static";
 export default function Home() {
   const {
     onSend,
@@ -15,7 +14,7 @@ export default function Home() {
   } = useWaku();
 
   return (
-    <main className="flex min-h-screen flex-col p-24 font-mono max-w-screen-lg">
+    <main className="flex min-h-screen flex-col p-6 font-mono max-w-screen-lg">
       <Header>
         <DebugInfo value={debugInfo} />
       </Header>
