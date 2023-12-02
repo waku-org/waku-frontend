@@ -37,7 +37,7 @@ type IRLN = {
 
 export class RLN implements IRLN {
   private readonly emitter = new EventTarget();
-  public readonly ethProvider: ethers.providers.Web3Provider;
+  public ethProvider: ethers.providers.Web3Provider | undefined;
 
   public rlnInstance: undefined | RLNInstance;
   public rlnContract: undefined | RLNContract;
@@ -47,14 +47,6 @@ export class RLN implements IRLN {
   private initializing = false;
 
   public constructor() {
-    const ethereum =
-      window.ethereum as unknown as ethers.providers.ExternalProvider;
-    if (!isBrowserProviderValid(ethereum)) {
-      throw Error(
-        "Invalid Ethereum provider present on the page. Check if MetaMask is connected."
-      );
-    }
-    this.ethProvider = new ethers.providers.Web3Provider(ethereum, "any");
     this.keystore = this.initKeystore();
   }
 
@@ -64,6 +56,8 @@ export class RLN implements IRLN {
     }
 
     this.initializing = true;
+
+    this.initProvider();
     await this.initRLNWasm();
 
     // emit keystore keys once app is ready
@@ -71,6 +65,21 @@ export class RLN implements IRLN {
 
     this.initialized = true;
     this.initializing = false;
+  }
+
+  private initProvider() {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const ethereum =
+      window.ethereum as unknown as ethers.providers.ExternalProvider;
+    if (!isBrowserProviderValid(ethereum)) {
+      throw Error(
+        "Invalid Ethereum provider present on the page. Check if MetaMask is connected."
+      );
+    }
+    this.ethProvider = new ethers.providers.Web3Provider(ethereum, "any");
   }
 
   private async initRLNWasm(): Promise<void> {
@@ -89,7 +98,7 @@ export class RLN implements IRLN {
   }
 
   public async initRLNContract(rlnInstance: RLNInstance): Promise<void> {
-    if (this.rlnContract) {
+    if (this.rlnContract || !this.ethProvider) {
       return;
     }
 
@@ -109,9 +118,13 @@ export class RLN implements IRLN {
 
   private initKeystore(): Keystore {
     const localKeystoreString = localStorage.getItem("keystore");
-    
+
+    if (!localKeystoreString) {
+      return Keystore.create();
+    }
+
     try {
-      return Keystore.fromString(localKeystoreString || "");
+      return Keystore.fromString(localKeystoreString || "") || Keystore.create();
     } catch(error) {
       return Keystore.create();
     }

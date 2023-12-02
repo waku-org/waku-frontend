@@ -13,8 +13,6 @@ export const http = {
     delete(url: string, body: any) {
         return fetch(new URL(url), {
             method: "DELETE",
-            mode: "no-cors",
-            referrerPolicy: "no-referrer", 
             headers: {
                 'Content-Type': 'text/plain',
             },

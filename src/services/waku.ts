@@ -17,79 +17,59 @@ const RELAY = "/relay/v1";
 const buildURL = (endpoint: string) => `${LOCAL_NODE}${endpoint}`;
 
 class Relay {
+  private subscribing = false;
   private readonly subscriptionsEmitter = new EventTarget();
-
-  private contentTopicListeners: Map<string, number> = new Map();
-
   // only one content topic subscriptions is possible now
   private subscriptionRoutine: undefined | number;
 
   constructor() {}
 
   public addEventListener(contentTopic: string, fn: EventListener) {
-    this.handleSubscribed(contentTopic);
+    this.subscribe();
     return this.subscriptionsEmitter.addEventListener(contentTopic, fn as any);
   }
 
   public removeEventListener(contentTopic: string, fn: EventListener) {
-    this.handleUnsubscribed(contentTopic);
     return this.subscriptionsEmitter.removeEventListener(
       contentTopic,
       fn as any
     );
   }
 
-  private async handleSubscribed(contentTopic: string) {
-    const numberOfListeners = this.contentTopicListeners.get(contentTopic);
-
-    // if nwaku node already subscribed to this content topic
-    if (numberOfListeners) {
-      this.contentTopicListeners.set(contentTopic, numberOfListeners + 1);
+  private async subscribe() {
+    if (this.subscriptionRoutine || this.subscribing) {
       return;
     }
 
+    this.subscribing = true;
     try {
       await http.post(buildURL(`${RELAY}/subscriptions`), [PUBSUB_TOPIC]);
 
       this.subscriptionRoutine = window.setInterval(async () => {
         await this.fetchMessages();
-      }, 10 * SECOND);
-
-      this.contentTopicListeners.set(contentTopic, 1);
+      },  5 * SECOND);
     } catch (error) {
-      console.error(`Failed to subscribe node ${contentTopic}:`, error);
+      console.error(`Failed to subscribe node ${PUBSUB_TOPIC}:`, error);
     }
+    this.subscribing = false;
   }
 
-  private async handleUnsubscribed(contentTopic: string) {
-    const numberOfListeners = this.contentTopicListeners.get(contentTopic);
-
-    if (!numberOfListeners) {
-      return;
-    }
-
-    if (numberOfListeners - 1 > 0) {
-      this.contentTopicListeners.set(contentTopic, numberOfListeners - 1);
+  public async unsubscribe() {
+    if (!this.subscriptionRoutine) {
       return;
     }
 
     try {
       await http.delete(buildURL(`${RELAY}/subscriptions`), [PUBSUB_TOPIC]);
     } catch (error) {
-      console.error(`Failed to unsubscribe node from ${contentTopic}:`, error);
+      console.error(`Failed to unsubscribe node from ${PUBSUB_TOPIC}:`, error);
     }
 
     clearInterval(this.subscriptionRoutine);
-    this.contentTopicListeners.delete(contentTopic);
+    this.subscriptionRoutine = undefined;
   }
 
   private async fetchMessages(): Promise<void> {
-    const contentTopic = Array.from(this.contentTopicListeners.keys())[0];
-
-    if (!contentTopic) {
-      return;
-    }
-
     const response = await http.get(
       buildURL(`${RELAY}/messages/${encodeURIComponent(PUBSUB_TOPIC)}`)
     );
@@ -99,9 +79,27 @@ class Relay {
       return;
     }
 
-    this.subscriptionsEmitter.dispatchEvent(
-      new CustomEvent(contentTopic, { detail: body })
-    );
+    const messagesPerContentTopic = new Map<string, Message[]>();
+    body.forEach((m) => {
+      const contentTopic = m.contentTopic;
+      if (!contentTopic) {
+        return;
+      }
+
+      let messages = messagesPerContentTopic.get(contentTopic);
+      if (!messages) {
+        messages = [];
+      }
+
+      messages.push(m);
+      messagesPerContentTopic.set(contentTopic, messages);
+    });
+
+    Array.from(messagesPerContentTopic.entries()).forEach(([contentTopic, messages]) => {
+      this.subscriptionsEmitter.dispatchEvent(
+        new CustomEvent(contentTopic, { detail: messages })
+      );
+    });
   }
 
   public async send(message: Message): Promise<void> {
@@ -109,6 +107,92 @@ class Relay {
   }
 }
 
+type DebugInfoResponse = {
+  enrUri: string;
+  listenAddresses: string[];
+}
+
+export type DebugInfo = {
+  health: string;
+  version: string;
+} & DebugInfoResponse;
+
+class Debug {
+  private subscribing = false;
+  private readonly subscriptionsEmitter = new EventTarget();
+  private subscriptionRoutine: undefined | number;
+
+  constructor() {}
+
+  public addEventListener(event: string, fn: EventListener) {
+    this.subscribe();
+    return this.subscriptionsEmitter.addEventListener(event, fn as any);
+  }
+
+  public removeEventListener(event: string, fn: EventListener) {
+    return this.subscriptionsEmitter.removeEventListener(
+      event,
+      fn as any
+    );
+  }
+
+  private async subscribe() {
+    if (this.subscriptionRoutine || this.subscribing) {
+      return;
+    }
+
+    this.subscribing = true;
+    try {
+      await this.fetchParameters();
+      this.subscriptionRoutine = window.setInterval(async () => {
+        await this.fetchParameters();
+      },  30 * SECOND);
+    } catch(error) {
+      console.error("Failed to fetch debug info:", error);
+    }
+    this.subscribing = false;
+  }
+
+  private async unsubscribe() {
+    if (!this.subscriptionRoutine) {
+      return;
+    }
+    clearInterval(this.subscriptionRoutine);
+    this.subscriptionRoutine = undefined;
+  }
+
+  private async fetchParameters(): Promise<void> {
+    const health = await this.fetchHealth();
+    const debug = await this.fetchDebugInfo();
+    const version = await this.fetchDebugVersion();
+
+    this.subscriptionsEmitter.dispatchEvent(
+      new CustomEvent("debug", { detail: {
+        health,
+        version,
+        ...debug,
+      } })
+    );
+  }
+
+  private async fetchHealth(): Promise<string> {
+    const response = await http.get(buildURL(`/health`));
+    return response.text();
+  }
+
+  private async fetchDebugInfo(): Promise<DebugInfoResponse> {
+    const response = await http.get(buildURL(`/debug/v1/info`));
+    const body: DebugInfoResponse = await response.json();
+    return body;
+  }
+
+  private async fetchDebugVersion(): Promise<string> {
+    const response = await http.get(buildURL(`/debug/v1/version`));
+    return response.text();
+  }
+}
+
 export const waku = {
   relay: new Relay(),
+  debug: new Debug(),
 };

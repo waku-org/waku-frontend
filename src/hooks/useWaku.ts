@@ -1,55 +1,101 @@
 import React from "react";
 import { CONTENT_TOPIC } from "@/constants";
-import { Message, waku } from "@/services/waku";
+import { DebugInfo, Message, waku } from "@/services/waku";
 
 export type MessageContent = {
   nick: string;
   text: string;
-  time: string;
+  timestamp: number;
 };
 
 export const useWaku = () => {
-  const [messages, setMessages] = React.useState<MessageContent[]>([]);
+  const [contentTopic, setContentTopic] = React.useState<string>(CONTENT_TOPIC);
+  const [messages, setMessages] = React.useState<Map<string, MessageContent>>(new Map());
+  const [debugInfo, setDebugInfo] = React.useState<undefined | DebugInfo>();
 
   React.useEffect(() => {
     const messageListener = (event: CustomEvent) => {
-      const messages: Message[] = event.detail;
-      const parsedMessaged = messages.map((message) => {
-        const time = new Date(message.timestamp);
-        const payload = JSON.parse(atob(message.payload));
+      const nextMessages = new Map(messages);
+      const newMessages: Message[] = event.detail;
 
-        return {
+      newMessages.forEach((m) => {
+        const payload = JSON.parse(atob(m.payload));
+
+        const message: MessageContent = {
           nick: payload?.nick || "unknown",
           text: payload?.text || "empty",
-          time: time.toDateString(),
+          timestamp: m.timestamp || Date.now(),
         };
+        nextMessages.set(`${message.nick}-${message.timestamp}-${message.text}`, message);
       });
 
-      setMessages((prev) => [...prev, ...parsedMessaged]);
+      setMessages(nextMessages);
     };
 
-    waku.relay.addEventListener(CONTENT_TOPIC, messageListener);
+    waku.relay.addEventListener(contentTopic, messageListener);
 
     return () => {
-      waku.relay.removeEventListener(CONTENT_TOPIC, messageListener);
+      waku.relay.removeEventListener(contentTopic, messageListener);
     };
-  }, [setMessages]);
+  }, [messages, setMessages, contentTopic]);
+
+
+  React.useEffect(() => {
+    const debugInfoListener = (event: CustomEvent) => {
+      const debugInfo = event.detail;
+
+      if (!debugInfo) {
+        return;
+      }
+
+      setDebugInfo(debugInfo);
+    };
+
+    waku.debug.addEventListener("debug", debugInfoListener);
+
+    return () => {
+      waku.debug.removeEventListener("debug", debugInfoListener);
+    };
+  }, [debugInfo, setDebugInfo]);
 
   const onSend = React.useCallback(
     async (nick: string, text: string) => {
+      const timestamp = Date.now();
       await waku.relay.send({
         version: 0,
-        timestamp: Date.now(),
+        timestamp,
         contentTopic: CONTENT_TOPIC,
         payload: btoa(JSON.stringify({
           nick,
           text
         })),
       });
+      const id = `${nick}-${timestamp}-${text}`;
+      setMessages((prev) => {
+        if (prev.has(id)) {
+          return prev;
+        }
+        const next = new Map(prev);
+        next.set(id, { nick, timestamp, text });
+        return next;
+      });
     },
-    []
+    [setMessages]
   );
 
-  return { onSend, messages };
-};
+  const onContentTopicChange = async (nextContentTopic: string) => {
+    if (nextContentTopic === contentTopic) {
+      return;
+    }
 
+    setContentTopic(nextContentTopic);
+  };
+
+  return {
+    onSend,
+    debugInfo,
+    contentTopic,
+    onContentTopicChange,
+    messages: Array.from(messages.values())
+  };
+};

@@ -25,7 +25,7 @@ export const useKeystore = (): UseKeystoreResult => {
       return;
     }
 
-    const signer = rln.ethProvider.getSigner();
+    const signer = rln?.ethProvider.getSigner();
     const signature = await signer.signMessage(
       `${SIGNATURE_MESSAGE}. Nonce: ${randomNumber()}`
     );
