@@ -44,6 +44,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
+          no-cache: true
           push: true
           # temporal, migrate to waku-org
           tags: alrevuelta/waku-frontend:${{ steps.commit.outputs.short }} , alrevuelta/waku-frontend:latest
