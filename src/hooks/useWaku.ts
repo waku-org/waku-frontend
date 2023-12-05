@@ -64,7 +64,7 @@ export const useWaku = () => {
       await waku.relay.send({
         version: 0,
         timestamp,
-        contentTopic: CONTENT_TOPIC,
+        contentTopic,
         payload: btoa(JSON.stringify({
           nick,
           text
