@@ -1,5 +1,5 @@
 import React from "react";
-import { CONTENT_TOPIC } from "@/constants";
+import { CONTENT_TOPIC, PUBSUB_TOPIC } from "@/constants";
 import { DebugInfo, Message, waku } from "@/services/waku";
 
 export type MessageContent = {
@@ -10,6 +10,7 @@ export type MessageContent = {
 
 export const useWaku = () => {
   const [contentTopic, setContentTopic] = React.useState<string>(CONTENT_TOPIC);
+  const [pubsubTopic, setPubsubTopic] = React.useState<string>(PUBSUB_TOPIC);
   const [messages, setMessages] = React.useState<Map<string, MessageContent>>(new Map());
   const [debugInfo, setDebugInfo] = React.useState<undefined | DebugInfo>();
 
@@ -58,10 +59,10 @@ export const useWaku = () => {
     };
   }, [debugInfo, setDebugInfo]);
 
-  const onSend = React.useCallback(
+  const onSend =
     async (nick: string, text: string) => {
       const timestamp = Date.now();
-      await waku.relay.send({
+      await waku.relay.send(pubsubTopic, {
         version: 0,
         timestamp,
         contentTopic,
@@ -79,9 +80,7 @@ export const useWaku = () => {
         next.set(id, { nick, timestamp, text });
         return next;
       });
-    },
-    [setMessages]
-  );
+    };
 
   const onContentTopicChange = async (nextContentTopic: string) => {
     if (nextContentTopic === contentTopic) {
@@ -91,11 +90,22 @@ export const useWaku = () => {
     setContentTopic(nextContentTopic);
   };
 
+  const onPubsubTopicChange = async (nextPubsubTopic: string) => {
+    if (nextPubsubTopic === pubsubTopic) {
+      return;
+    }
+
+    setPubsubTopic(nextPubsubTopic);
+    waku.relay.changeActivePubsubTopic(nextPubsubTopic);
+  };
+
   return {
     onSend,
     debugInfo,
     contentTopic,
     onContentTopicChange,
-    messages: Array.from(messages.values())
+    pubsubTopic,
+    onPubsubTopicChange,
+    messages: Array.from(messages.values()),
   };
 };

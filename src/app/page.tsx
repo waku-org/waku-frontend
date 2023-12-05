@@ -10,7 +10,9 @@ export default function Home() {
     messages,
     debugInfo,
     contentTopic,
-    onContentTopicChange
+    onContentTopicChange,
+    pubsubTopic,
+    onPubsubTopicChange
   } = useWaku();
 
   return (
@@ -23,6 +25,8 @@ export default function Home() {
         messages={messages}
         activeContentTopic={contentTopic}
         onActiveContentTopicChange={onContentTopicChange}
+        activePubsubTopic={pubsubTopic}
+        onActivePubsubTopicChange={onPubsubTopicChange}
       />
     </main>
   );
