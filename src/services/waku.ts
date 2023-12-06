@@ -1,4 +1,4 @@
-import { PUBSUB_TOPIC } from "@/constants";
+import { PUBSUB_TOPIC, SUPPORTED_PUBSUB_TOPICS } from "@/constants";
 import { http } from "@/utils/http";
 
 export type Message = {
@@ -17,6 +17,7 @@ const RELAY = "/relay/v1";
 const buildURL = (endpoint: string) => `${LOCAL_NODE}${endpoint}`;
 
 class Relay {
+  private activePubsubTopic = SUPPORTED_PUBSUB_TOPICS[0];
   private subscribing = false;
   private readonly subscriptionsEmitter = new EventTarget();
   // only one content topic subscriptions is possible now
@@ -43,13 +44,13 @@ class Relay {
 
     this.subscribing = true;
     try {
-      await http.post(buildURL(`${RELAY}/subscriptions`), [PUBSUB_TOPIC]);
+      await http.post(buildURL(`${RELAY}/subscriptions`), SUPPORTED_PUBSUB_TOPICS);
 
       this.subscriptionRoutine = window.setInterval(async () => {
         await this.fetchMessages();
       },  5 * SECOND);
     } catch (error) {
-      console.error(`Failed to subscribe node ${PUBSUB_TOPIC}:`, error);
+      console.error(`Failed to subscribe node any of ${SUPPORTED_PUBSUB_TOPICS}:`, error);
     }
     this.subscribing = false;
   }
@@ -71,7 +72,7 @@ class Relay {
 
   private async fetchMessages(): Promise<void> {
     const response = await http.get(
-      buildURL(`${RELAY}/messages/${encodeURIComponent(PUBSUB_TOPIC)}`)
+      buildURL(`${RELAY}/messages/${encodeURIComponent(this.activePubsubTopic)}`)
     );
     const body: Message[] = await response.json();
 
@@ -102,8 +103,12 @@ class Relay {
     });
   }
 
-  public async send(message: Message): Promise<void> {
-    await http.post(buildURL(`${RELAY}/messages/${encodeURIComponent(PUBSUB_TOPIC)}`), message);
+  public changeActivePubsubTopic(pubsubTopic: string) {
+    this.activePubsubTopic = pubsubTopic;
+  }
+
+  public async send(pubsubTopic: string, message: Message): Promise<void> {
+    await http.post(buildURL(`${RELAY}/messages/${encodeURIComponent(pubsubTopic)}`), message);
   }
 }
 
