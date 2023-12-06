@@ -31,3 +31,5 @@ npm run build
 docker build -t waku_frontend .
 docker run -d -p 8080:80 waku_frontend
 ```
+
+Open [http://localhost:8080](http://localhost:8080) with your browser to see the result.
