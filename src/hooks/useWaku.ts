@@ -20,14 +20,18 @@ export const useWaku = () => {
       const newMessages: Message[] = event.detail;
 
       newMessages.forEach((m) => {
-        const payload = JSON.parse(atob(m.payload));
+        try {
+          const payload = JSON.parse(atob(m.payload));
 
-        const message: MessageContent = {
-          nick: payload?.nick || "unknown",
-          text: payload?.text || "empty",
-          timestamp: m.timestamp || Date.now(),
-        };
-        nextMessages.set(`${message.nick}-${message.timestamp}-${message.text}`, message);
+          const message: MessageContent = {
+            nick: payload?.nick || "unknown",
+            text: payload?.text || "empty",
+            timestamp: m.timestamp || Date.now(),
+          };
+          nextMessages.set(`${message.nick}-${message.timestamp}-${message.text}`, message);
+        } catch(error) {
+          console.error("Failed to parse message:", error);
+        }
       });
 
       setMessages(nextMessages);
