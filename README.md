@@ -28,11 +28,21 @@ The public chat room is open to everyone who knows the community name. The conte
 
 ## Development
 
+### Locally
 ```shell
 npm install
 
 npm run dev
 ```
+
+### Docker
+
+```
+docker build -t waku-frontend .
+docker run -p 5173:5173 waku-frontend
+```
+
+And go to `http://localhost:5173`.
 
 ## Caddy configuration
 
