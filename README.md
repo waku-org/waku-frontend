@@ -1,35 +1,63 @@
-# waku-frontend
-Waku's frontend. Interact with your waku node via this simple user interface
+# Waku Frontend
 
-## Getting Started
+The chat application to use The Waku Network.
 
-First, run the development server:
+## Why
 
-```bash
+- a PoC to battle test The Waku Network.
+- create user experience with REST API / WebSocket
+- facilitate the developer adoption of Waku protocols
+- split concern to harden the protocol stabliity with C/S model
+- incubate app based sync protocol
+
+
+*Notes:* This project is still in the early stage of development, and the data is not persistent, you may lose the message history any time.
+
+
+## Features
+
+### Public community chat
+
+The public chat room is open to everyone who knows the community name. The content is not encrypted.
+
+## Plans
+
+- WebSocket to support real-time chat
+- End-to-end encryption for 1to1 chat
+
+
+## Development
+
+```shell
+npm install
+
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Caddy configuration
 
-## To run independently
+```
+your-domain.com {
+        @cors_preflight {
+                method OPTIONS
+        }
+        respond @cors_preflight 204
 
-```bash
-npm run build
-npm run serve
+        header {
+                Access-Control-Allow-Origin *
+                Access-Control-Allow-Methods GET,POST,OPTIONS,HEAD,PATCH,PUT,DELETE
+                Access-Control-Allow-Headers User-Agent,Content-Type,X-Api-Key
+                Access-Control-Max-Age 86400
+        }
+        reverse_proxy :8645
+}
 ```
 
-## To run in docker
+## Depend APIs
 
-```bash
-npm run build
-docker build -t waku_frontend .
-docker run -d -p 8080:80 waku_frontend
-```
+- /relay/v1/auto/messages
+- /store/v1/messages
 
-Open [http://localhost:8080](http://localhost:8080) with your browser to see the result.
+## Known Issues
+
+- https://github.com/waku-org/nwaku/issues/2615, temporary fix is set pageSize to `300`.
