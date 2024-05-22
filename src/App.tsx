@@ -43,7 +43,6 @@ interface CommunityMetadata {
   contentTopic: string;
 }
 
-const SERVICE_ENDPOINT = "https://waku.whisperd.tech";
 const COMMUNITY_CONTENT_TOPIC_PREFIX = "/universal/1/community";
 
 function App() {
@@ -58,7 +57,7 @@ function App() {
     CommunityMetadata[]
   >([]);
   const [communityName, setCommunityName] = useState("");
-  const [apiEndpoint, setApiEndpoint] = useState(SERVICE_ENDPOINT);
+  const [apiEndpoint, setApiEndpoint] = useState(import.meta.env.VITE_SERVICE_ENDPOINT);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateMessage = (e: any) => setNewMessage(e.target.value);
