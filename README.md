@@ -66,7 +66,7 @@ your-domain.com {
 ## Depend APIs
 
 - /relay/v1/auto/messages
-- /store/v1/messages
+- /store/v3/messages
 
 ## Known Issues
 

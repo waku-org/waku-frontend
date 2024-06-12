@@ -20,7 +20,7 @@ import logo from "./assets/logo-waku.svg";
 
 interface Message {
   payload: string;
-  contentTopic: string;
+  content_topic: string;
   timestamp: number;
 }
 
@@ -38,12 +38,18 @@ interface ResponseData {
   cursor?: Cursor;
 }
 
+interface MessageData {
+  message: Message;
+  message_hash: string;
+}
+
 interface CommunityMetadata {
   name: string;
   contentTopic: string;
 }
 
-const SERVICE_ENDPOINT = "https://waku.whisperd.tech";
+// const SERVICE_ENDPOINT = process.env.API_ENDPOINT || "http://localhost:8645";
+const SERVICE_ENDPOINT = "http://localhost:8645";
 const COMMUNITY_CONTENT_TOPIC_PREFIX = "/universal/1/community";
 
 function App() {
@@ -98,17 +104,19 @@ function App() {
           return;
         }
 
-        let url = `${apiEndpoint}/store/v1/messages?contentTopics=${joinedContentTopics}&ascending=false&pageSize=300`;
+        let url = `${apiEndpoint}/store/v3/messages?contentTopics=${encodeURIComponent(joinedContentTopics)}&ascending=false&pageSize=300&includeData=true`;
         const response = await axios.get(url);
         console.log("Data:", response.data);
 
+        const parsedResponse = response.data.messages.map((obj: MessageData) => obj.message);
+        
         setMessages((prev) => {
-          const filtered = response.data.messages.filter((msg: Message) => {
+          const filtered = parsedResponse.filter((msg: Message) => {
             const found = prev.find(
               (item) =>
                 item.payload === msg.payload &&
                 item.timestamp === msg.timestamp &&
-                item.contentTopic === msg.contentTopic
+                item.content_topic === msg.content_topic
             );
             return !found;
           });
@@ -136,7 +144,7 @@ function App() {
               (item) =>
                 item.payload === msg.payload &&
                 item.timestamp === msg.timestamp &&
-                item.contentTopic === msg.contentTopic
+                item.content_topic === msg.content_topic
             );
             return !found;
           });
@@ -277,7 +285,7 @@ function App() {
   const decodeMsg = (index: number, msg: Message) => {
     try {
       if (
-        msg.contentTopic !==
+        msg.content_topic !==
         `${COMMUNITY_CONTENT_TOPIC_PREFIX}/${community?.contentTopic}`
       ) {
         return;
