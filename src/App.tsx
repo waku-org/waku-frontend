@@ -182,6 +182,9 @@ function App() {
       }
     };
 
+    fetchAllMessages()
+    fetchNumPeers()
+    
     const intervalId = setInterval(fetchAllMessages, 2000); // Trigger fetchData every 2 seconds
     const intervalId2 = setInterval(fetchNumPeers, 10000); // Trigger fetchNumPeers every 10 seconds
 
