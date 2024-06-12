@@ -64,6 +64,8 @@ function App() {
   >([]);
   const [communityName, setCommunityName] = useState("");
   const [apiEndpoint, setApiEndpoint] = useState(SERVICE_ENDPOINT);
+  const [nwakuVersion, setNwakuVersion] = useState("");
+  const [numPeers, setNumPeers] = useState("")
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateMessage = (e: any) => setNewMessage(e.target.value);
@@ -83,6 +85,22 @@ function App() {
       console.log("joined communities", parsed);
     }
   }, []);
+
+  useEffect(() => {
+    const fetchNwakuVersion = async () => {
+      try {
+        let url = `${apiEndpoint}/debug/v1/version`;
+        const response = await axios.get(url);
+        console.log("fetchNwakuVersion data:", response.data);
+        setNwakuVersion(response.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+    
+    fetchNwakuVersion()
+
+  }, [apiEndpoint]);
 
   useEffect(() => {
     const fetchAllMessages = async () => {
@@ -127,6 +145,18 @@ function App() {
       }
     };
 
+    const fetchNumPeers = async () => {
+      try{
+        let url = `${apiEndpoint}/admin/v1/peers`;
+        const response = await axios.get(url);
+        console.log("getNumPeers data:", response.data);
+        setNumPeers(response.data.length)
+        console.log(`there are ${response.data.length} peers`)
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    }
+    
     const handleCursor = async (baseUrl: string, data: ResponseData) => {
       if (data.cursor) {
         const url = `${baseUrl}&pubsubTopic=${data.cursor.pubsub_topic}&digest=${data.cursor.digest.data}&senderTime=${data.cursor.sender_time}&storeTime=${data.cursor.store_time}`;
@@ -153,8 +183,12 @@ function App() {
     };
 
     const intervalId = setInterval(fetchAllMessages, 2000); // Trigger fetchData every 2 seconds
+    const intervalId2 = setInterval(fetchNumPeers, 10000); // Trigger fetchNumPeers every 10 seconds
 
-    return () => clearInterval(intervalId);
+    return () => {
+      clearInterval(intervalId);
+      clearInterval(intervalId2);
+    }
   }, [joinedCommunities, apiEndpoint]);
 
   const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
