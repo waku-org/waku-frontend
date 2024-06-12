@@ -439,6 +439,11 @@ function App() {
 
       <div className="absolute right-16 top-16">{settingsDialog()}</div>
 
+      <div className="absolute left-16 top-16 flex flex-col">
+        <Label className="text-md">Nwaku Version: {nwakuVersion}</Label>
+        <Label className="text-md">Number of Peers: {numPeers}</Label>
+      </div>
+      
       {!username && (
         <div className="flex flex-col gap-5 items-center justify-center h-screen mt-[-60px]">
           {logoImage()}
