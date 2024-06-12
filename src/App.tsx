@@ -48,8 +48,7 @@ interface CommunityMetadata {
   contentTopic: string;
 }
 
-// const SERVICE_ENDPOINT = process.env.API_ENDPOINT || "http://localhost:8645";
-const SERVICE_ENDPOINT = "http://localhost:8645";
+const SERVICE_ENDPOINT = import.meta.env.VITE_API_ENDPOINT || "http://localhost:8645";
 const COMMUNITY_CONTENT_TOPIC_PREFIX = "/universal/1/community";
 
 function App() {
