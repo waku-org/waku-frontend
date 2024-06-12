@@ -212,6 +212,13 @@ function App() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const checkForEnter = (e: any) => {
+    if (e.key === 'Enter') {
+      sendMessage()
+    }
+  }
+
   const createUser = async () => {
     try {
       const name = await CreateUser(usernameInput);
@@ -456,6 +463,7 @@ function App() {
                   <Input
                     value={newMessage}
                     onChange={updateMessage}
+                    onKeyDown={checkForEnter}
                     placeholder="Input your message"
                     autoComplete="off"
                     autoCorrect="off"
