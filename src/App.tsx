@@ -64,6 +64,8 @@ function App() {
   >([]);
   const [communityName, setCommunityName] = useState("");
   const [apiEndpoint, setApiEndpoint] = useState(SERVICE_ENDPOINT);
+  const [nwakuVersion, setNwakuVersion] = useState("");
+  const [numPeers, setNumPeers] = useState("")
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateMessage = (e: any) => setNewMessage(e.target.value);
@@ -71,11 +73,6 @@ function App() {
   useEffect(() => {
     const name = GetUser();
     setUsername(name);
-
-    const endpoint = localStorage.getItem("apiEndpoint");
-    if (endpoint && !import.meta.env.VITE_API_ENDPOINT) {
-      setApiEndpoint(endpoint);
-    }
 
     const localCommunity = localStorage.getItem("community");
     console.log("current community", localCommunity);
@@ -88,6 +85,22 @@ function App() {
       console.log("joined communities", parsed);
     }
   }, []);
+
+  useEffect(() => {
+    const fetchNwakuVersion = async () => {
+      try {
+        let url = `${apiEndpoint}/debug/v1/version`;
+        const response = await axios.get(url);
+        console.log("fetchNwakuVersion data:", response.data);
+        setNwakuVersion(response.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+    
+    fetchNwakuVersion()
+
+  }, [apiEndpoint]);
 
   useEffect(() => {
     const fetchAllMessages = async () => {
@@ -132,6 +145,18 @@ function App() {
       }
     };
 
+    const fetchNumPeers = async () => {
+      try{
+        let url = `${apiEndpoint}/admin/v1/peers`;
+        const response = await axios.get(url);
+        console.log("getNumPeers data:", response.data);
+        setNumPeers(response.data.length)
+        console.log(`there are ${response.data.length} peers`)
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    }
+    
     const handleCursor = async (baseUrl: string, data: ResponseData) => {
       if (data.cursor) {
         const url = `${baseUrl}&pubsubTopic=${data.cursor.pubsub_topic}&digest=${data.cursor.digest.data}&senderTime=${data.cursor.sender_time}&storeTime=${data.cursor.store_time}`;
@@ -157,9 +182,16 @@ function App() {
       }
     };
 
-    const intervalId = setInterval(fetchAllMessages, 5000); // Trigger fetchData every 5 seconds
+    fetchAllMessages()
+    fetchNumPeers()
+    
+    const intervalId = setInterval(fetchAllMessages, 2000); // Trigger fetchData every 2 seconds
+    const intervalId2 = setInterval(fetchNumPeers, 10000); // Trigger fetchNumPeers every 10 seconds
 
-    return () => clearInterval(intervalId);
+    return () => {
+      clearInterval(intervalId);
+      clearInterval(intervalId2);
+    }
   }, [joinedCommunities, apiEndpoint]);
 
   const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
@@ -216,6 +248,13 @@ function App() {
       toast.error(`Error happens: ${err}`);
     }
   };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const checkForEnter = (e: any) => {
+    if (e.key === 'Enter') {
+      sendMessage()
+    }
+  }
 
   const createUser = async () => {
     try {
@@ -275,10 +314,6 @@ function App() {
     console.log("select community", joinedCommunities[index]);
     setCommunity(joinedCommunities[index]);
     localStorage.setItem("community", JSON.stringify(joinedCommunities[index]));
-  };
-
-  const saveSettings = () => {
-    localStorage.setItem("apiEndpoint", apiEndpoint);
   };
 
   const decodeMsg = (index: number, msg: Message) => {
@@ -343,7 +378,7 @@ function App() {
           </div>
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="submit" onClick={saveSettings}>
+              <Button type="submit">
                 Save
               </Button>
             </DialogClose>
@@ -407,6 +442,11 @@ function App() {
 
       <div className="absolute right-16 top-16">{settingsDialog()}</div>
 
+      <div className="absolute left-16 top-16 flex flex-col">
+        <Label className="text-md">Nwaku Version: {nwakuVersion}</Label>
+        <Label className="text-md">Number of Peers: {numPeers}</Label>
+      </div>
+      
       {!username && (
         <div className="flex flex-col gap-5 items-center justify-center h-screen mt-[-60px]">
           {logoImage()}
@@ -465,6 +505,7 @@ function App() {
                   <Input
                     value={newMessage}
                     onChange={updateMessage}
+                    onKeyDown={checkForEnter}
                     placeholder="Input your message"
                     autoComplete="off"
                     autoCorrect="off"
