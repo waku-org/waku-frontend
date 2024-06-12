@@ -152,7 +152,7 @@ function App() {
       }
     };
 
-    const intervalId = setInterval(fetchAllMessages, 5000); // Trigger fetchData every 5 seconds
+    const intervalId = setInterval(fetchAllMessages, 2000); // Trigger fetchData every 2 seconds
 
     return () => clearInterval(intervalId);
   }, [joinedCommunities, apiEndpoint]);
