@@ -35,6 +35,15 @@ npm install
 npm run dev
 ```
 
+The default API endpoint used to contact a Waku Node is http://localhost:8645
+
+In order to set a custom endpoint, please set the env variable `VITE_API_ENDPOINT`
+
+For example
+```
+export VITE_API_ENDPOINT=<my-other-endpoint>
+```
+
 ### Docker
 
 ```
@@ -66,7 +75,7 @@ your-domain.com {
 ## Depend APIs
 
 - /relay/v1/auto/messages
-- /store/v1/messages
+- /store/v3/messages
 
 ## Known Issues
 
