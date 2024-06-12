@@ -73,7 +73,7 @@ function App() {
     setUsername(name);
 
     const endpoint = localStorage.getItem("apiEndpoint");
-    if (endpoint) {
+    if (endpoint && !import.meta.env.VITE_API_ENDPOINT) {
       setApiEndpoint(endpoint);
     }
 
