@@ -72,11 +72,6 @@ function App() {
     const name = GetUser();
     setUsername(name);
 
-    const endpoint = localStorage.getItem("apiEndpoint");
-    if (endpoint && !import.meta.env.VITE_API_ENDPOINT) {
-      setApiEndpoint(endpoint);
-    }
-
     const localCommunity = localStorage.getItem("community");
     console.log("current community", localCommunity);
     setCommunity(localCommunity ? JSON.parse(localCommunity) : undefined);
@@ -277,10 +272,6 @@ function App() {
     localStorage.setItem("community", JSON.stringify(joinedCommunities[index]));
   };
 
-  const saveSettings = () => {
-    localStorage.setItem("apiEndpoint", apiEndpoint);
-  };
-
   const decodeMsg = (index: number, msg: Message) => {
     try {
       if (
@@ -343,7 +334,7 @@ function App() {
           </div>
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="submit" onClick={saveSettings}>
+              <Button type="submit">
                 Save
               </Button>
             </DialogClose>
