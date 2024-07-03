@@ -20,7 +20,7 @@ import logo from "./assets/logo-waku.svg";
 
 interface Message {
   payload: string;
-  content_topic: string;
+  contentTopic: string;
   timestamp: number;
 }
 
@@ -48,8 +48,32 @@ interface CommunityMetadata {
   contentTopic: string;
 }
 
+interface InfoResponse {
+  listenAddresses: string[];
+  enrUri: string;
+}
+
+interface HealthResponse {
+  nodeHealth: string;
+  protocolsHealth: string[];
+}
+
 const SERVICE_ENDPOINT = import.meta.env.VITE_API_ENDPOINT || "http://localhost:8645";
 const COMMUNITY_CONTENT_TOPIC_PREFIX = "/universal/1/community";
+
+export function handleError(error: any): void {
+  let message: string;
+
+  if (error.response) {
+      message = `Error: ${error.response.status}\nMessage: ${error.response.data}`;
+  } else if (error.request) {
+      message = 'Error: No response received from server';
+  } else {
+      message = `Error: ${error.message}`;
+  }
+
+  alert(message);
+}
 
 function App() {
   const [newMessage, setNewMessage] = useState("");
@@ -65,6 +89,8 @@ function App() {
   const [communityName, setCommunityName] = useState("");
   const [apiEndpoint, setApiEndpoint] = useState(SERVICE_ENDPOINT);
   const [nwakuVersion, setNwakuVersion] = useState("");
+  const [infoNode, setInfoNode] = useState<InfoResponse>();
+  const [health, setHealth] = useState<HealthResponse>();
   const [numPeers, setNumPeers] = useState("")
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -103,6 +129,38 @@ function App() {
   }, [apiEndpoint]);
 
   useEffect(() => {
+    const fetchInfoNode = async () => {
+      try {
+        let url = `${apiEndpoint}/debug/v1/info`;
+        const response = await axios.get<InfoResponse>(url);
+        console.log("fetchInfoNode data:", response.data);
+        setInfoNode(response.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+    
+    fetchInfoNode()
+
+  }, [apiEndpoint]);
+
+  useEffect(() => {
+    const fetchHealth = async () => {
+      try {
+        let url = `${apiEndpoint}/health`;
+        const response = await axios.get<HealthResponse>(url);
+        console.log("fetchHealth data:", response.data);
+        setHealth(response.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+    
+    fetchHealth()
+
+  }, [apiEndpoint]);
+
+  useEffect(() => {
     const fetchAllMessages = async () => {
       try {
         const joinedContentTopics = joinedCommunities
@@ -128,7 +186,7 @@ function App() {
               (item) =>
                 item.payload === msg.payload &&
                 item.timestamp === msg.timestamp &&
-                item.content_topic === msg.content_topic
+                item.contentTopic === msg.contentTopic
             );
             return !found;
           });
@@ -168,7 +226,7 @@ function App() {
               (item) =>
                 item.payload === msg.payload &&
                 item.timestamp === msg.timestamp &&
-                item.content_topic === msg.content_topic
+                item.contentTopic === msg.contentTopic
             );
             return !found;
           });
@@ -223,16 +281,21 @@ function App() {
         community!.contentTopic
       }`,
     };
-    const response = await axios.post(
-      `${apiEndpoint}/relay/v1/auto/messages`,
-      JSON.stringify(message),
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    return response.data;
+
+    try{
+      const response = await axios.post(
+        `${apiEndpoint}/relay/v1/auto/messages`,
+        JSON.stringify(message),
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
   };
 
   const sendMessage = async () => {
@@ -319,7 +382,7 @@ function App() {
   const decodeMsg = (index: number, msg: Message) => {
     try {
       if (
-        msg.content_topic !==
+        msg.contentTopic !==
         `${COMMUNITY_CONTENT_TOPIC_PREFIX}/${community?.contentTopic}`
       ) {
         return;
@@ -443,8 +506,11 @@ function App() {
       <div className="absolute right-16 top-16">{settingsDialog()}</div>
 
       <div className="absolute left-16 top-16 flex flex-col">
+        <Label className="text-md">Health: {health?.nodeHealth === "Ready" ? "🟢" : "🔴"}</Label>
         <Label className="text-md">Nwaku Version: {nwakuVersion}</Label>
         <Label className="text-md">Number of Peers: {numPeers}</Label>
+        <Label className="text-md">Multiaddress: {infoNode?.listenAddresses}</Label>
+        {/*<Label className="text-md">ENR: {infoNode?.enrUri}</Label>*/}
       </div>
       
       {!username && (
