@@ -48,10 +48,10 @@ export VITE_API_ENDPOINT=<my-other-endpoint>
 
 ```
 docker build -t waku-frontend .
-docker run -p 5173:5173 waku-frontend
+docker run -p 4000:4000 waku-frontend
 ```
 
-And go to `http://localhost:5173`.
+And go to `http://localhost:4000`.
 
 ## Caddy configuration
 

@@ -17,7 +17,7 @@ COPY . .
 RUN npm install -g vite
 
 # Expose the port Vite runs on
-EXPOSE 5173
+EXPOSE 4000
 
 # Ensure node_modules/.bin is in the PATH
 ENV PATH /app/node_modules/.bin:$PATH
